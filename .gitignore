@@ -29,3 +29,4 @@ fe/.idea/
 
 ### Docker
 be/volume/
+pgadmin-data/

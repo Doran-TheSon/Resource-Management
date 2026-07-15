@@ -1,4 +1,41 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: rm-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=resource_management
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rm-network
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: rm-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@rm.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rm-network
+    restart: unless-stopped
+
   be:
     build:
       context: ./be
@@ -8,12 +45,9 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      # Nếu dùng MySQL, uncomment và thêm service mysql
-      # - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/resource_management
-      # - SPRING_DATASOURCE_USERNAME=root
-      # - SPRING_DATASOURCE_PASSWORD=root
-    volumes:
-      - be-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - rm-network
     restart: unless-stopped
@@ -38,17 +72,5 @@ networks:
     driver: bridge
 
 volumes:
-  be-data:
-
-# Cách chạy riêng lẻ (không dùng compose) khi cần:
-#
-# Cả 2 bằng Docker:
-#   docker run -p 8080:8080 --network rm-network --name be rm-be
-#   docker run -p 5173:3000 --network rm-network -e VITE_API_URL=http://be:8080 rm-fe
-#
-# BE Docker + FE thật (npm run dev):
-#   giữ nguyên .env mặc định → localhost:8080 (vì Docker map -p 8080:8080)
-#
-# BE thật (mvn) + FE Docker:
-#   docker run -p 5173:3000 --add-host host.docker.internal:host-gateway rm-fe
-#   và code fetch http://host.docker.internal:8080/api/...
+  pgdata:
+  pgadmin-data:

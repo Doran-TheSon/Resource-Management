@@ -8,7 +8,8 @@ Hệ thống quản lý phân bổ nhân sự (Resource Allocation) cho công ty
 |-------|-----------|
 | **Backend** | Java 21, Spring Boot 3.4.4, Spring Data JPA, Maven |
 | **Frontend** | React 19, Vite 8 |
-| **Database** | H2 (dev), PostgreSQL (production) |
+| **Database** | H2 (dev), PostgreSQL 16 (production/docker) |
+| **API Docs** | SpringDoc OpenAPI (Swagger UI) |
 | **Container** | Docker, docker-compose |
 
 ## Project Structure
@@ -26,15 +27,20 @@ Resource-Management/
 │   │       ├── exception/       # Custom exceptions + handler
 │   │       └── config/          # App config (CORS, ...)
 │   ├── src/main/resources/
-│   │   ├── application.yml      # Dev config (H2)
-│   │   └── application-docker.yml  # Docker config
+│   │   ├── application.yml          # Config chung
+│   │   ├── application-dev.yml      # H2 dev profile
+│   │   ├── application-prod.yml     # PostgreSQL local profile
+│   │   └── application-docker.yml   # PostgreSQL Docker profile
 │   └── Dockerfile               # Multi-stage build
 ├── fe/                          # Frontend (React + Vite)
 │   ├── src/                     # React source
 │   └── Dockerfile               # Multi-stage build
 ├── docs/
-│   └── requirements-analysis.md # Phân tích & quyết định triển khai
-├── docker-compose.yml           # BE + FE orchestration
+│   ├── requirements-analysis.md # Phân tích & quyết định triển khai
+│   └── be/
+│       ├── impl-plan.md         # BE implementation plan
+│       └── phase-1.md           # Phase 1 — project setup
+├── docker-compose.yml           # BE + FE + DB + pgAdmin orchestration
 ├── Project_Resource_Allocation_Assignment.md  # Yêu cầu gốc
 └── .gitignore
 ```
@@ -48,16 +54,26 @@ Resource-Management/
 - Node.js 20+ (cho FE)
 - Docker & docker-compose (optional)
 
-### Chạy Backend (development)
+### Chạy Backend với H2 (development)
 
 ```bash
 cd be
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-API: http://localhost:8080/api
+API: http://localhost:8080
 
 H2 Console: http://localhost:8080/h2-console (JDBC URL: `jdbc:h2:mem:resource_management`)
+
+Swagger UI: http://localhost:8080/swagger-ui.html
+
+### Chạy Backend với PostgreSQL local
+
+```bash
+# Cần có PostgreSQL chạy ở local trước
+cd be
+mvn spring-boot:run -Dspring-boot.run.profiles=prod
+```
 
 ### Chạy Frontend (development)
 
@@ -69,14 +85,19 @@ npm run dev
 
 Web: http://localhost:5173
 
-### Chạy bằng Docker (cả BE + FE)
+### Chạy bằng Docker (cả BE + FE + DB + pgAdmin)
 
 ```bash
 docker compose up --build
 ```
 
-- Backend: http://localhost:8080/api
-- Frontend: http://localhost:5173
+| Service | URL | Ghi chú |
+|---------|-----|---------|
+| Backend API | http://localhost:8080 | Spring Boot |
+| Swagger UI | http://localhost:8080/swagger-ui.html | API docs |
+| Frontend | http://localhost:5173 | React app |
+| pgAdmin | http://localhost:5050 | `admin@rm.com` / `admin` |
+| PostgreSQL | localhost:5432 | internal |
 
 ## API Endpoints
 
