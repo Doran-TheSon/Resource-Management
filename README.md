@@ -8,7 +8,7 @@ Hệ thống quản lý phân bổ nhân sự (Resource Allocation) cho công ty
 |-------|-----------|
 | **Backend** | Java 21, Spring Boot 3.4.4, Spring Data JPA, Maven |
 | **Frontend** | React 19, Vite 8 |
-| **Database** | H2 (dev), PostgreSQL 16 (production/docker) |
+| **Database** | PostgreSQL 16 (cả dev lẫn prod) |
 | **API Docs** | SpringDoc OpenAPI (Swagger UI) |
 | **Container** | Docker, docker-compose |
 
@@ -27,10 +27,8 @@ Resource-Management/
 │   │       ├── exception/       # Custom exceptions + handler
 │   │       └── config/          # App config (CORS, ...)
 │   ├── src/main/resources/
-│   │   ├── application.yml          # Config chung
-│   │   ├── application-dev.yml      # H2 dev profile
-│   │   ├── application-prod.yml     # PostgreSQL local profile
-│   │   └── application-docker.yml   # PostgreSQL Docker profile
+│   │   ├── application.yml          # PostgreSQL local config
+│   │   └── application-docker.yml   # PostgreSQL Docker config
 │   └── Dockerfile               # Multi-stage build
 ├── fe/                          # Frontend (React + Vite)
 │   ├── src/                     # React source
@@ -54,38 +52,30 @@ Resource-Management/
 - Node.js 20+ (cho FE)
 - Docker & docker-compose (optional)
 
-### Chạy Backend với H2 (development)
+### Chạy Backend (local — cần PostgreSQL)
 
 ```bash
+# Yêu cầu: PostgreSQL chạy ở localhost:5432, DB resource_management đã tạo
+# Dùng "docker compose up db -d" nếu muốn chạy DB riêng
 cd be
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+mvn spring-boot:run
 ```
 
 API: http://localhost:8080
 
-H2 Console: http://localhost:8080/h2-console (JDBC URL: `jdbc:h2:mem:resource_management`)
-
 Swagger UI: http://localhost:8080/swagger-ui.html
 
-### Chạy Backend với PostgreSQL local
+### Chạy Backend với Docker (profile docker)
 
 ```bash
-# Cần có PostgreSQL chạy ở local trước
 cd be
-mvn spring-boot:run -Dspring-boot.run.profiles=prod
+mvn spring-boot:run -Dspring-boot.run.profiles=docker
 ```
 
-### Chạy Frontend (development)
+> Cần PostgreSQL chạy ở `localhost:5432` hoặc Docker container tên `db`.
 
 ```bash
-cd fe
-npm install
-npm run dev
-```
-
-Web: http://localhost:5173
-
-### Chạy bằng Docker (cả BE + FE + DB + pgAdmin)
+### Chạy bằng Docker (full stack — BE + FE + DB + pgAdmin)
 
 ```bash
 docker compose up --build

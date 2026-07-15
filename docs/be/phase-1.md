@@ -1,6 +1,6 @@
-# Giai đoạn 1 — Khởi tạo project
+# Phase 1 — Khởi tạo project
 
-> Mục tiêu: thiết lập project skeleton, đủ dependencies, cấu hình DB PostgreSQL cả local lẫn Docker, có pgAdmin để xem dữ liệu.
+> Mục tiêu: thiết lập project skeleton, đủ dependencies, cấu hình PostgreSQL, có pgAdmin để xem dữ liệu.
 
 ---
 
@@ -8,66 +8,121 @@
 
 ### 1. Cập nhật `be/pom.xml`
 
-Thêm 2 dependency còn thiếu:
+Dependencies cần có:
 
-| Dependency | Lý do |
-|-----------|-------|
-| `org.postgresql:postgresql` (scope runtime) | Driver kết nối PostgreSQL |
-| `org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6` | Swagger UI tự động từ OpenAPI 3 |
+| Dependency | Scope | Lý do |
+|-----------|-------|-------|
+| `spring-boot-starter-web` | compile | REST API |
+| `spring-boot-starter-data-jpa` | compile | JPA + Hibernate |
+| `spring-boot-starter-validation` | compile | `@Valid`, `@NotBlank`, ... |
+| `postgresql` | **runtime** | Driver PostgreSQL |
+| `lombok` | optional | Boilerplate |
+| `springdoc-openapi-starter-webmvc-ui:2.8.6` | compile | Swagger UI |
+| `h2` | **test** | Chỉ dùng cho test với `@DataJpaTest` |
+| `spring-boot-starter-test` | test | JUnit 5 + Mockito |
 
-Xoá comment `<!-- MySQL -->` và dùng PostgreSQL thay thế.
+> **Không dùng H2 cho dev** — dev chạy Docker, xài PostgreSQL thật luôn. H2 chỉ để test.
 
-### 2. Tách profile cấu hình
+Xoá comment `<!-- MySQL -->` và block H2 runtime.
 
-- **`application.yml`** — chỉ giữ config chung: `server.port`, `spring.application.name`, logging level gốc
-- **`application-dev.yml`** — H2 in-memory, `ddl-auto=update`, `show-sql=true`, H2 console bật
-- **`application-prod.yml`** — PostgreSQL: datasource `jdbc:postgresql://localhost:5432/resource_management`, `ddl-auto=validate`, `show-sql=false`
-- **`application-docker.yml`** — giống prod nhưng host DB là tên service `db` thay vì `localhost`
+### 2. Cấu hình
 
-### 3. Viết lại `docker-compose.yml`
+**`application.yml`** (default — chạy local, cần PostgreSQL chạy ở localhost):
 
-Thêm 2 service mới vào compose hiện tại:
+```yaml
+server:
+  port: 8080
 
-| Service | Image | Port | Tính năng |
+spring:
+  application:
+    name: resource-management
+  datasource:
+    url: jdbc:postgresql://localhost:5432/resource_management
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+logging:
+  level:
+    com.resourcemanagement: DEBUG
+    org.springframework: INFO
+```
+
+**`application-docker.yml`** — ghi đè host DB khi chạy Docker Compose:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/resource_management
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    com.resourcemanagement: INFO
+    org.springframework: WARN
+```
+
+> Chỉ khác nhau cái host: `localhost` vs `db` (tên service trong docker-compose).
+> Không cần profile `dev` — ai muốn chạy local thì dùng default.
+
+### 3. Docker Compose
+
+| Service | Image | Port | Chức năng |
 |---------|-------|------|-----------|
-| `db` | `postgres:16-alpine` | `5432` | Volume `pgdata` persist data, `POSTGRES_DB=resource_management`, health check |
-| `pgadmin` | `dpage/pgadmin4:latest` | `5050` | Login bằng `admin@rm.com` / `admin`, auto-connect tới `db` |
+| `be` | tự build | `8080` | Spring Boot |
+| `fe` | tự build | `5173` | React (giữ nguyên) |
+| `db` | `postgres:16-alpine` | `5432` | PostgreSQL, volume persist + health check |
+| `pgadmin` | `dpage/pgadmin4:latest` | `5050` | Web xem/soạn dữ liệu, login `admin@rm.com` / `admin` |
 
-Cập nhật service `be`:
-- `SPRING_PROFILES_ACTIVE=docker` (giữ nguyên)
-- `depends_on` thêm `db` và `pgadmin`
-- Xoá `be-data` volume không cần thiết
+Service `be` dùng `SPRING_PROFILES_ACTIVE=docker` và `depends_on: db: condition: service_healthy`.
 
 ### 4. Cập nhật `.gitignore`
 
-Thêm dòng `be/volume/` (nếu chưa có) và `pgadmin-data/` ở root.
+Thêm `pgadmin-data/`.
 
 ### 5. Cập nhật `README.md`
 
-Thêm hướng dẫn:
-- Chạy Docker Compose → gồm BE + FE + DB + pgAdmin
-- URL pgAdmin: `http://localhost:5050`
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- Khi chạy local (`mvn spring-boot:run`) dùng profile `dev`
+Hướng dẫn chạy:
+
+```bash
+# Chạy full stack
+docker compose up --build
+
+# Health check
+curl http://localhost:8080/api/health
+
+# Swagger
+http://localhost:8080/swagger-ui.html
+
+# pgAdmin
+http://localhost:5050   # admin@rm.com / admin
+```
 
 ---
 
-## Kết quả sau giai đoạn 1
+## Kết quả sau phase 1
 
 ```
 docker-compose.yml     ← thêm db + pgadmin
 be/
-  pom.xml              ← thêm postgresql + springdoc
+  pom.xml              ← PostgreSQL + SpringDoc, H2 chỉ test
   Dockerfile           ← không đổi
   src/main/resources/
-    application.yml    ← config chung
-    application-dev.yml    ← H2 dev
-    application-prod.yml   ← PostgreSQL prod
-    application-docker.yml ← PostgreSQL docker
+    application.yml         ← default (PostgreSQL localhost)
+    application-docker.yml  ← Docker (PostgreSQL db:5432)
 .gitignore             ← thêm pgadmin-data/
 ```
 
-Chạy được `docker compose up` và thấy:
-- API ở `http://localhost:8080`
-- Swagger ở `http://localhost:8080/swagger-ui.html`
-- pgAdmin ở `http://localhost:5050` → login → xem DB `resource_management`
+App chạy được bằng `docker compose up`:
+- API: `http://localhost:8080`
+- Swagger: `http://localhost:8080/swagger-ui.html`
+- pgAdmin: `http://localhost:5050`
