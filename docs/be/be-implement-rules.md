@@ -48,9 +48,9 @@ com.resourcemanagement/
 
 ### 1.3 API Base Path
 
-Tất cả endpoints đều có prefix `/api/v1/` — khai báo qua `server.servlet.context-path=/api/v1` trong `application.yml`.
+Tất cả endpoints đều có prefix `/api/v1` — thêm prefix này trong `@RequestMapping` của mỗi controller (ví dụ: `@RequestMapping("/api/v1/employees")`).
 
-**Không dùng** `@RequestMapping("/api/v1/...")` trên từng controller nếu đã có context-path.
+**Không dùng** `server.servlet.context-path` — giữ mặc định để tránh conflict với Swagger/SpringDoc paths.
 
 ### 1.4 API Method & Status Mapping
 
@@ -231,7 +231,7 @@ Dùng `MethodArgumentNotValidException` handler để map field errors.
 | `AllocationOverlapException` | `ALLOCATION_OVERLAP` | 409 | Trùng thời gian allocation |
 | `ProjectCompletedException` | `PROJECT_COMPLETED` | 400 | Allocate vào COMPLETED project |
 | `InvalidDateRangeException` | `INVALID_DATE_RANGE` | 400 | Date range không hợp lệ |
-| `OptimisticLockException` | `CONCURRENT_MODIFICATION` | 409 | Conflict khi save |
+| `OptimisticLockException` | `OPTIMISTIC_LOCK` | 409 | Conflict khi save |
 
 ---
 
@@ -673,7 +673,7 @@ Controller method:
 | `@Transactional` trên Controller | Service layer mới xử lý transaction |
 | System.out.println | Dùng Logger (SLF4J) |
 | Wildcard import (`import ...*`) | Không rõ dependency |
-| Magic number (`if(total > 100)`) | Dùng hằng số `MAX_ALLOCATION = 100` |
+| Magic number (`if(total > 100)`, `100 - total`) | Dùng hằng số `MAX_ALLOCATION = 100` |
 | Try-catch trong Controller | GlobalExceptionHandler lo |
 | Return Entity từ Controller | Security risk + over-fetching |
 

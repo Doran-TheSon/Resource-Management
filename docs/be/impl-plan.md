@@ -4,32 +4,32 @@
 
 ---
 
-### 1. Khởi tạo project
+### 1. Khởi tạo project ✅
 
-- [ ] Tạo Spring Boot project (Java 21, Maven) với các dependency: Spring Web, Spring Data JPA, PostgreSQL Driver, H2, Validation, SpringDoc OpenAPI, Lombok
-- [ ] Cấu hình `application.yml` chung + `application-dev.yml` (H2, auto-DDL) + `application-prod.yml` (PostgreSQL, validate)
-- [ ] Docker Compose:
+- [x] Tạo Spring Boot project (Java 21, Maven) với các dependency: Spring Web, Spring Data JPA, PostgreSQL Driver, H2, Validation, SpringDoc OpenAPI, Lombok
+- [x] Cấu hình `application.yml` (PostgreSQL) + `application-docker.yml` (Docker override)
+- [x] Docker Compose:
   - `app` — Spring Boot (port 8080)
   - `db` — postgres:16-alpine (port 5432, volume persist data)
   - `pgadmin` — dùng để xem/soạn dữ liệu trực quan (port 5050)
-- [ ] Dockerfile multi-stage (`maven:3.9-eclipse-temurin-21` build → `eclipse-temurin:21-jre-alpine` run)
-- [ ] `.gitignore` Java/Spring + `README.md` hướng dẫn run
+- [x] Dockerfile multi-stage (`maven:3.9-eclipse-temurin-21` build → `eclipse-temurin:21-jre-alpine` run)
+- [x] `.gitignore` Java/Spring + `README.md` hướng dẫn run
 
-### 2. Entity & DB
+### 2. Entity & DB ✅
 
-- [ ] Tạo entities: `Employee`, `Project` (`ProjectStatus` enum: PLANNING / ACTIVE / COMPLETED), `Allocation` (`@Version` optimistic lock)
-- [ ] `schema.sql` / Flyway migration:
+- [x] Tạo entities: `Employee`, `Project` (`ProjectStatus` enum: PLANNING / ACTIVE / COMPLETED), `Allocation` (`@Version` optimistic lock)
+- [x] Flyway migration:
   - CREATE TABLE employee, project, allocation
   - FK constraints (`allocation → employee`, `allocation → project`)
   - Indexes (`employee_code`, `project_status`, `allocation_employee_id`, `allocation_project_id`)
   - UNIQUE constraints (`employee_code`, `project_code`, composite `(employee_id, project_id, start_date)`)
   - CHECK (`allocation_percent > 0 AND allocation_percent <= 100`)
 
-### 3. Repository
+### 3. Repository ✅
 
-- [ ] `EmployeeRepository` — filter by department/role (`?department=&role=`), `findAvailableByRole`, sort mặc định `fullName` ASC, pagination (`Pageable`)
-- [ ] `ProjectRepository` — filter by status/customer, sort by `startDate` DESC
-- [ ] `AllocationRepository` — `SUM` query cho validation (COALESCE), `findByEmployeeEmployeeId`, report queries (utilization, available, overloaded)
+- [x] `EmployeeRepository` — filter by department/role (`?department=&role=`), `findAvailableByRole`, sort mặc định `fullName` ASC, pagination (`Pageable`)
+- [x] `ProjectRepository` — filter by status/customer, sort by `startDate` DESC
+- [x] `AllocationRepository` — `SUM` query cho validation (COALESCE), `findByEmployeeEmployeeId`, report queries (utilization, available, overloaded)
 
 ### 4. Exception & response ✅
 
@@ -39,7 +39,7 @@
   - `MethodArgumentNotValidException` → 400 với field-level errors map
   - `HttpMessageNotReadableException` → 400
 - [x] `ErrorResponse` DTO (message, status code, optional field errors)
-- [x] 9 custom exceptions với đầy đủ errorCode
+- [x] 10 custom exceptions với đầy đủ errorCode
 - [x] `ApiResponse<T>` generic cho success response
 - [x] Build thành công `mvn compile`
 
@@ -49,19 +49,23 @@
 - [x] Response records: `EmployeeResponse`, `ProjectResponse`, `AllocationResponse`, `WorkloadResponse`, `EmployeeUtilizationDTO`, `AllocationDetailDTO`
 - [x] Build thành công `mvn compile`
 
-### 6. Service layer
+### 6. Service layer ✅
 
-- [ ] `EmployeeService` — CRUD + check duplicate `employeeCode`
-- [ ] `ProjectService` — CRUD + validate `endDate >= startDate` + không cho allocate vào COMPLETED (logic ở AllocationService)
-- [ ] `AllocationService` — full business rules:
-  - [ ] Range validation: `allocationPercent` 1-100%
-  - [ ] Tổng ≤ 100%: **SUM query ở DB level** (không load records vào memory) + `@Version` Optimistic Lock
-  - [ ] Project không ở trạng thái COMPLETED
-  - [ ] Date range: `startDate >= project.startDate`, `endDate >= startDate`
-  - [ ] **Overlap check**: không cho 2 allocation trùng thời gian trên cùng 1 project-cùng employee
-  - [ ] Logging: INFO cho CRUD, WARN cho validation fail
-  - [ ] Catch `OptimisticLockException` → throw `AllocationExceededException` với message "Data was modified by another user. Please retry."
-  - [ ] Khi update: trừ allocation cũ + thêm allocation mới rồi kiểm tra tổng
+- [x] `EmployeeService` — CRUD + check duplicate `employeeCode`
+- [x] `ProjectService` — CRUD + validate `endDate >= startDate`
+- [x] `AllocationService` — full business rules:
+  - [x] Range validation: `allocationPercent` 1-100% (Jakarta Validation ở Request DTO)
+  - [x] Tổng ≤ 100%: **SUM query ở DB level** (không load records vào memory) + `@Version` Optimistic Lock
+  - [x] Project không ở trạng thái COMPLETED
+  - [x] Date range: `startDate >= project.startDate`, `endDate >= startDate`
+  - [x] **Overlap check**: không cho 2 allocation trùng thời gian trên cùng 1 project-cùng employee
+  - [x] Logging: INFO cho CRUD, WARN cho validation fail
+  - [x] Catch `jakarta.persistence.OptimisticLockException` → throw custom `OptimisticLockException` (409, OPTIMISTIC_LOCK)
+  - [x] Khi update: trừ allocation cũ + thêm allocation mới rồi kiểm tra tổng
+- [x] Additional: thêm method `findByStatusAndCustomerContainingIgnoreCase` vào `ProjectRepository`
+- [x] Additional: tạo custom `OptimisticLockException` (409) trong package exception
+- [x] Additional: sửa `ProjectCompletedException` message format: `"Project {name} is completed. Cannot allocate."`
+- [x] Build thành công `mvn compile`
 
 ### 7. Controller layer
 

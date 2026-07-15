@@ -7,7 +7,9 @@ public record EmployeeUtilizationDTO(
     int available
 ) {
 
+    private static final int MAX_ALLOCATION = 100;
+
     public EmployeeUtilizationDTO(Long employeeId, String fullName, int totalAllocation) {
-        this(employeeId, fullName, totalAllocation, 100 - totalAllocation);
+        this(employeeId, fullName, totalAllocation, MAX_ALLOCATION - totalAllocation);
     }
 }

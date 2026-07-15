@@ -15,5 +15,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     Page<Project> findByCustomerContainingIgnoreCase(String customer, Pageable pageable);
 
+    Page<Project> findByStatusAndCustomerContainingIgnoreCase(ProjectStatus status, String customer, Pageable pageable);
+
     List<Project> findByStatusNot(ProjectStatus status);
 }
