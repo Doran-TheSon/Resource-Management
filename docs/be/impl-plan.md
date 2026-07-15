@@ -43,10 +43,11 @@
 - [x] `ApiResponse<T>` generic cho success response
 - [x] Build thành công `mvn compile`
 
-### 5. DTO
+### 5. DTO ✅
 
-- [ ] Request records: `EmployeeRequest`, `ProjectRequest`, `AllocationRequest` (Jakarta Validation — `@NotBlank`, `@Email`, `@Min(1)`, `@Max(100)`)
-- [ ] Response records: `EmployeeResponse`, `ProjectResponse`, `AllocationResponse`, `WorkloadResponse`, `EmployeeUtilizationDTO`
+- [x] Request records: `EmployeeRequest`, `ProjectRequest`, `AllocationRequest` (Jakarta Validation — `@NotBlank`, `@Email`, `@Min(1)`, `@Max(100)`)
+- [x] Response records: `EmployeeResponse`, `ProjectResponse`, `AllocationResponse`, `WorkloadResponse`, `EmployeeUtilizationDTO`, `AllocationDetailDTO`
+- [x] Build thành công `mvn compile`
 
 ### 6. Service layer
 
