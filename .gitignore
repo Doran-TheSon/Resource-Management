@@ -1,0 +1,31 @@
+### Windows
+Thumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+### Java / Maven (BE)
+be/target/
+be/*.class
+be/*.jar
+be/*.war
+be/.settings/
+be/.classpath
+be/.project
+be/.idea/
+be/*.iml
+be/.vscode/
+be/logs/
+
+### Node / React (FE)
+fe/node_modules/
+fe/dist/
+fe/build/
+fe/.env.local
+fe/.env.*.local
+fe/*.log
+fe/.vscode/
+fe/.idea/
+
+### Docker
+be/volume/

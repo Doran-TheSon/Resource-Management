@@ -1,0 +1,54 @@
+services:
+  be:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+    container_name: rm-be
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      # Nếu dùng MySQL, uncomment và thêm service mysql
+      # - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/resource_management
+      # - SPRING_DATASOURCE_USERNAME=root
+      # - SPRING_DATASOURCE_PASSWORD=root
+    volumes:
+      - be-data:/app/data
+    networks:
+      - rm-network
+    restart: unless-stopped
+
+  fe:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://be:8080
+    container_name: rm-fe
+    ports:
+      - "5173:3000"
+    depends_on:
+      - be
+    networks:
+      - rm-network
+    restart: unless-stopped
+
+networks:
+  rm-network:
+    driver: bridge
+
+volumes:
+  be-data:
+
+# Cách chạy riêng lẻ (không dùng compose) khi cần:
+#
+# Cả 2 bằng Docker:
+#   docker run -p 8080:8080 --network rm-network --name be rm-be
+#   docker run -p 5173:3000 --network rm-network -e VITE_API_URL=http://be:8080 rm-fe
+#
+# BE Docker + FE thật (npm run dev):
+#   giữ nguyên .env mặc định → localhost:8080 (vì Docker map -p 8080:8080)
+#
+# BE thật (mvn) + FE Docker:
+#   docker run -p 5173:3000 --add-host host.docker.internal:host-gateway rm-fe
+#   và code fetch http://host.docker.internal:8080/api/...
