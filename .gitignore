@@ -27,6 +27,10 @@ fe/*.log
 fe/.vscode/
 fe/.idea/
 
+### Environment variables
+be/.env
+fe/.env
+
 ### Docker
 be/volume/
 pgadmin-data/

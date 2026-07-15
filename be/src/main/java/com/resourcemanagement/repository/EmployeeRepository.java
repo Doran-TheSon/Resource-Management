@@ -21,6 +21,12 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     Page<Employee> findByDepartmentAndRole(String department, String role, Pageable pageable);
 
+    List<Employee> findByRoleContainingIgnoreCase(String role);
+
+    List<Employee> findByDepartmentContainingIgnoreCase(String department);
+
+    List<Employee> findByRoleContainingIgnoreCaseAndDepartmentContainingIgnoreCase(String role, String department);
+
     // Tìm employee còn available >= minAvailable%
     @Query("SELECT e FROM Employee e WHERE e.employeeId IN (" +
            "  SELECT a.employee.employeeId FROM Allocation a " +
@@ -28,4 +34,16 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
            "  HAVING COALESCE(SUM(a.allocationPercent), 0) <= :maxAllocation" +
            ") OR e.employeeId NOT IN (SELECT a.employee.employeeId FROM Allocation a)")
     List<Employee> findAvailableEmployees(@Param("maxAllocation") Integer maxAllocation);
+
+    // Tìm employee theo role + available filter
+    @Query("SELECT e FROM Employee e WHERE " +
+           "LOWER(e.role) LIKE LOWER(CONCAT('%', :role, '%')) " +
+           "AND (e.employeeId IN (" +
+           "  SELECT a.employee.employeeId FROM Allocation a " +
+           "  GROUP BY a.employee.employeeId " +
+           "  HAVING COALESCE(SUM(a.allocationPercent), 0) <= :maxAllocation" +
+           ") OR e.employeeId NOT IN (SELECT a.employee.employeeId FROM Allocation a))")
+    List<Employee> findByRoleContainingIgnoreCaseAndAvailable(
+            @Param("role") String role,
+            @Param("maxAllocation") Integer maxAllocation);
 }

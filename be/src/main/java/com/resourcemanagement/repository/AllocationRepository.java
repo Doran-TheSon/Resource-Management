@@ -54,4 +54,16 @@ public interface AllocationRepository extends JpaRepository<Allocation, Long> {
            "HAVING COALESCE(SUM(a.allocationPercent), 0) > 90 " +
            "ORDER BY e.fullName ASC")
     List<Object[]> findOverloadedResources();
+
+    // Lấy danh sách allocation hiện tại của employee (cùng tên project)
+    @Query("SELECT a.project.projectName FROM Allocation a WHERE a.employee.employeeId = :empId")
+    List<String> findProjectNamesByEmployeeId(@Param("empId") Long empId);
+
+    // Đếm tổng employee đang được allocate
+    @Query("SELECT COUNT(DISTINCT a.employee.employeeId) FROM Allocation a")
+    Long countDistinctAllocatedEmployees();
+
+    // Employee stats: đếm số lượng employee theo role
+    @Query("SELECT e.role, COUNT(e) FROM Employee e GROUP BY e.role")
+    List<Object[]> countEmployeesByRole();
 }

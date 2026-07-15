@@ -10,6 +10,7 @@ Hệ thống quản lý phân bổ nhân sự (Resource Allocation) cho công ty
 | **Frontend** | React 19, Vite 8 |
 | **Database** | PostgreSQL 16 (cả dev lẫn prod) |
 | **API Docs** | SpringDoc OpenAPI (Swagger UI) |
+| **AI** | Google Gemini 2.0 Flash via Spring AI |
 | **Container** | Docker, docker-compose |
 
 ## Project Structure
@@ -51,11 +52,22 @@ Resource-Management/
 - Maven 3.9+
 - Node.js 20+ (cho FE)
 - Docker & docker-compose (optional)
+- Google Gemini API key (cho AI feature) — [đăng ký tại đây](https://aistudio.google.com/apikey)
+
+### Setup AI API Key
+
+```bash
+# Copy file env mẫu và điền Gemini API key của bạn
+cp be/.env.example be/.env
+# Sau đó sửa file be/.env, thay YOUR_API_KEY bằng key thật
+# Đăng ký key miễn phí tại: https://aistudio.google.com/apikey
+```
 
 ### Chạy Backend (local — cần PostgreSQL)
 
 ```bash
 # Yêu cầu: PostgreSQL chạy ở localhost:5432, DB resource_management đã tạo
+# Cần file be/.env với GEMINI_API_KEY để AI hoạt động
 # Dùng "docker compose up db -d" nếu muốn chạy DB riêng
 cd be
 mvn spring-boot:run
@@ -78,6 +90,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=docker
 ### Chạy bằng Docker (full stack — BE + FE + DB + pgAdmin)
 
 ```bash
+# Cần file be/.env với GEMINI_API_KEY trước khi chạy
+cp be/.env.example be/.env   # nếu chưa có
 docker compose up --build
 ```
 
@@ -126,12 +140,30 @@ docker compose up --build
 | GET    | `/api/v1/reports/available-resources` | Nhân viên còn available |
 | GET    | `/api/reports/overloaded` | Nhân viên quá tải |
 
-### AI
+### AI (Google Gemini)
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
-| POST   | `/api/ai/recommend` | Gợi ý resource (AI) |
-| POST   | `/api/ai/risk-analysis` | Phân tích rủi ro (AI) |
+| POST   | `/api/v1/ai/recommend` | Gợi ý resource theo ngôn ngữ tự nhiên |
+| POST   | `/api/v1/ai/risk-analysis` | Phân tích rủi ro capacity |
+
+> **Yêu cầu:** Google Gemini API key trong `be/.env` (`GEMINI_API_KEY=...`)
+>
+> **Cách hoạt động:** AI (Gemini) phân tích câu hỏi ngôn ngữ tự nhiên → Java query DB bằng Repository → AI giải thích kết quả. AI KHÔNG tự query DB — chỉ parse NL và sinh explanation.
+
+**Ví dụ AI Recommend:**
+```bash
+curl -X POST http://localhost:8080/api/v1/ai/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Tìm Java Developer còn tối thiểu 50% available"}'
+```
+
+**Ví dụ AI Risk Analysis:**
+```bash
+curl -X POST http://localhost:8080/api/v1/ai/risk-analysis \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Sprint tới cần thêm 2 Java Developer"}'
+```
 ## Business Rules
 
 1. **0 < allocation <= 100** — allocation phải từ 1% đến 100%
