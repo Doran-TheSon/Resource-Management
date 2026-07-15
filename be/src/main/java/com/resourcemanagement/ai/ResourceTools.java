@@ -28,6 +28,7 @@ public class ResourceTools {
 
     /**
      * Tìm nhân viên theo role, department, và available tối thiểu.
+     * Nếu role là multi-word (vd "Java Developer") không match exact -> fallback match từng keyword riêng lẻ.
      */
     public List<RecommendedResource> findEmployees(String role, String department, Integer minAvailable) {
         log.info("Tool: findEmployees(role={}, department={}, minAvailable={})", role, department, minAvailable);
@@ -40,8 +41,14 @@ public class ResourceTools {
                     .stream()
                     .filter(e -> getAllocationTotal(e.getEmployeeId()) <= maxAllocation)
                     .toList();
+            if (employees.isEmpty()) {
+                employees = findByRoleFallback(role, department, maxAllocation);
+            }
         } else if (role != null && !role.isBlank()) {
             employees = employeeRepository.findByRoleContainingIgnoreCaseAndAvailable(role, maxAllocation);
+            if (employees.isEmpty()) {
+                employees = findByRoleFallback(role, null, maxAllocation);
+            }
         } else if (department != null && !department.isBlank()) {
             employees = employeeRepository.findByDepartmentContainingIgnoreCase(department)
                     .stream()
@@ -54,6 +61,30 @@ public class ResourceTools {
         return employees.stream()
                 .map(this::toRecommendedResource)
                 .toList();
+    }
+
+    /**
+     * Fallback: tách role multi-word thành từng keyword riêng lẻ, thử match từng cái.
+     * Ví dụ: "Java Developer" -> match "Developer" hoặc "Senior Developer"
+     */
+    private List<Employee> findByRoleFallback(String role, String department, int maxAllocation) {
+        String[] words = role.toLowerCase().split("[\\s,]+");
+        for (String word : words) {
+            if (word.length() < 3) continue; // bỏ từ quá ngắn (vd "in", "the", "java" vẫn ok vì >=3)
+            List<Employee> matches;
+            if (department != null && !department.isBlank()) {
+                matches = employeeRepository.findByRoleContainingIgnoreCaseAndDepartmentContainingIgnoreCase(word, department);
+            } else {
+                matches = employeeRepository.findByRoleContainingIgnoreCase(word);
+            }
+            List<Employee> filtered = matches.stream()
+                    .filter(e -> getAllocationTotal(e.getEmployeeId()) <= maxAllocation)
+                    .toList();
+            if (!filtered.isEmpty()) {
+                return filtered;
+            }
+        }
+        return List.of();
     }
 
     /**

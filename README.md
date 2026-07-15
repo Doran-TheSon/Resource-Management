@@ -2,16 +2,21 @@
 
 Hệ thống quản lý phân bổ nhân sự (Resource Allocation) cho công ty outsourcing — cho phép PM/Resource Manager quản lý nhân viên, dự án, phân bổ thời gian và theo dõi workload.
 
+---
+
 ## Tech Stack
 
 | Layer | Công nghệ |
 |-------|-----------|
 | **Backend** | Java 21, Spring Boot 3.4.4, Spring Data JPA, Maven |
-| **Frontend** | React 19, Vite 8 |
+| **Frontend** | React 19, Vite 8, React Router v7 |
 | **Database** | PostgreSQL 16 (cả dev lẫn prod) |
+| **Migration** | Flyway |
 | **API Docs** | SpringDoc OpenAPI (Swagger UI) |
-| **AI** | Google Gemini 2.0 Flash via Spring AI |
+| **AI** | OpenRouter (openai/gpt-4o-mini, google/gemma-4-31b:free) hoặc Google Gemini |
 | **Container** | Docker, docker-compose |
+
+---
 
 ## Project Structure
 
@@ -20,80 +25,118 @@ Resource-Management/
 ├── be/                          # Backend (Java Spring Boot)
 │   ├── src/main/java/
 │   │   └── com/resourcemanagement/
+│   │       ├── ai/              # AI Integration (OpenRouter / Gemini)
 │   │       ├── controller/      # REST API controllers
 │   │       ├── service/         # Business logic layer
 │   │       ├── repository/      # JPA repositories
 │   │       ├── model/           # JPA entities
 │   │       ├── dto/             # Request/Response DTOs
 │   │       ├── exception/       # Custom exceptions + handler
-│   │       └── config/          # App config (CORS, ...)
+│   │       └── config/          # App config (CORS)
 │   ├── src/main/resources/
-│   │   ├── application.yml          # PostgreSQL local config
-│   │   └── application-docker.yml   # PostgreSQL Docker config
+│   │   ├── application.yml          # Local config
+│   │   ├── application-docker.yml   # Docker config
+│   │   └── db/migration/            # Flyway SQL migrations
+│   ├── .env                     # Environment variables (gitignored)
+│   ├── .env.example             # Mẫu env vars
 │   └── Dockerfile               # Multi-stage build
 ├── fe/                          # Frontend (React + Vite)
-│   ├── src/                     # React source
+│   ├── src/
+│   │   ├── api/                 # API client layer
+│   │   ├── components/          # Shared components
+│   │   │   ├── layout/          # AppLayout, Sidebar, Header
+│   │   │   └── common/          # DataTable, FormField, Toast, etc.
+│   │   ├── pages/               # Page components
+│   │   ├── hooks/               # Custom hooks
+│   │   ├── utils/               # Constants, validators, formatters
+│   │   └── styles/              # CSS theme, animations
 │   └── Dockerfile               # Multi-stage build
 ├── docs/
 │   ├── requirements-analysis.md # Phân tích & quyết định triển khai
-│   └── be/
-│       ├── impl-plan.md         # BE implementation plan
-│       └── phase-1.md           # Phase 1 — project setup
-├── docker-compose.yml           # BE + FE + DB + pgAdmin orchestration
-├── Project_Resource_Allocation_Assignment.md  # Yêu cầu gốc
-└── .gitignore
+│   ├── be/                      # BE implementation docs
+│   ├── fe/                      # FE architecture & mapping docs
+│   ├── db/                      # Database design
+│   └── AIIntegrate/             # AI integration architecture
+├── docker-compose.yml           # BE + FE + DB + pgAdmin
+├── Project_Resource_Allocation_Assignment.md
+└── README.md
 ```
 
-## Cách chạy
+---
 
-### Yêu cầu
+## Yêu cầu
 
-- Java 21+
-- Maven 3.9+
-- Node.js 20+ (cho FE)
-- Docker & docker-compose (optional)
-- Google Gemini API key (cho AI feature) — [đăng ký tại đây](https://aistudio.google.com/apikey)
+| Tool | Version | Ghi chú |
+|------|---------|---------|
+| Java | 21+ | Kiểm tra: `java --version` |
+| Maven | 3.9+ | Kiểm tra: `mvn --version` |
+| Node.js | 20+ | Kiểm tra: `node --version` |
+| Docker | 24+ | _(optional)_ Kiểm tra: `docker --version` |
+| API Key | — | OpenRouter hoặc Google Gemini |
 
-### Setup AI API Key
+---
+
+## Cài đặt & Cấu hình
+
+### 1. Clone project
 
 ```bash
-# Copy file env mẫu và điền Gemini API key của bạn
+git clone <repo-url>
+cd Resource-Management
+```
+
+### 2. Setup API Key (bắt buộc cho AI features)
+
+```bash
+# Copy file env mẫu
 cp be/.env.example be/.env
-# Sau đó sửa file be/.env, thay YOUR_API_KEY bằng key thật
-# Đăng ký key miễn phí tại: https://aistudio.google.com/apikey
 ```
 
-### Chạy Backend (local — cần PostgreSQL)
+Sửa file `be/.env`:
 
 ```bash
-# Yêu cầu: PostgreSQL chạy ở localhost:5432, DB resource_management đã tạo
-# Cần file be/.env với GEMINI_API_KEY để AI hoạt động
-# Dùng "docker compose up db -d" nếu muốn chạy DB riêng
+# Đăng ký key tại: https://openrouter.ai/keys
+GEMINI_API_KEY=sk-or-v1-your-key-here
+
+# Model mặc định (optional)
+AI_MODEL=google/gemma-4-31b:free
+```
+
+**Chọn provider:**
+| Provider | Key prefix | Đăng ký |
+|----------|-----------|---------|
+| **OpenRouter** (khuyên dùng) | `sk-or-...` | [openrouter.ai/keys](https://openrouter.ai/keys) |
+| **Google Gemini** | `AIza...` | [aistudio.google.com](https://aistudio.google.com/apikey) |
+
+### 3. Chạy bằng Docker (khuyên dùng)
+
+```bash
+# Build & start full stack
+docker compose up --build
+
+# Hoặc chạy ngầm
+docker compose up --build -d
+
+# Xem log
+docker compose logs -f
+```
+
+### 4. Hoặc chạy thủ công (cần PostgreSQL riêng)
+
+```bash
+# Terminal 1: Backend
 cd be
 mvn spring-boot:run
+
+# Terminal 2: Frontend
+cd fe
+npm install
+npm run dev
 ```
 
-API: http://localhost:8080
+---
 
-Swagger UI: http://localhost:8080/swagger-ui.html
-
-### Chạy Backend với Docker (profile docker)
-
-```bash
-cd be
-mvn spring-boot:run -Dspring-boot.run.profiles=docker
-```
-
-> Cần PostgreSQL chạy ở `localhost:5432` hoặc Docker container tên `db`.
-
-```bash
-### Chạy bằng Docker (full stack — BE + FE + DB + pgAdmin)
-
-```bash
-# Cần file be/.env với GEMINI_API_KEY trước khi chạy
-cp be/.env.example be/.env   # nếu chưa có
-docker compose up --build
-```
+## Services
 
 | Service | URL | Ghi chú |
 |---------|-----|---------|
@@ -103,78 +146,120 @@ docker compose up --build
 | pgAdmin | http://localhost:5050 | `admin@rm.com` / `admin` |
 | PostgreSQL | localhost:5432 | internal |
 
+---
+
+## Environment Variables
+
+File: `be/.env`
+
+| Variable | Required | Default | Mô tả |
+|----------|----------|---------|-------|
+| `GEMINI_API_KEY` | ✅ **Yes** | — | API key. Prefix `sk-or-` = OpenRouter, `AIza-` = Gemini |
+| `AI_MODEL` | ❌ No | `google/gemma-4-31b:free` | Model name (chỉ OpenRouter). Xem [openrouter.ai/models](https://openrouter.ai/models) |
+
+---
+
 ## API Endpoints
+
+Tất cả endpoints có prefix `/api/v1/...` (ví dụ: `http://localhost:8080/api/v1/employees`).
 
 ### Employee
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
-| POST   | `/api/employees` | Tạo nhân viên |
-| GET    | `/api/employees` | Danh sách nhân viên |
-| GET    | `/api/employees/{id}` | Chi tiết nhân viên |
-| PUT    | `/api/employees/{id}` | Cập nhật nhân viên |
+| POST | `/employees` | Tạo nhân viên |
+| GET | `/employees` | Danh sách (filter: `?department=&role=&page=&size=`) |
+| GET | `/employees/{id}` | Chi tiết |
+| PUT | `/employees/{id}` | Cập nhật |
 
 ### Project
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
-| POST   | `/api/projects` | Tạo dự án |
-| GET    | `/api/projects` | Danh sách dự án |
-| GET    | `/api/projects/{id}` | Chi tiết dự án |
-| PUT    | `/api/projects/{id}` | Cập nhật dự án |
+| POST | `/projects` | Tạo dự án |
+| GET | `/projects` | Danh sách (filter: `?status=&customer=`) |
+| GET | `/projects/{id}` | Chi tiết |
+| PUT | `/projects/{id}` | Cập nhật |
 
 ### Allocation
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
-| POST   | `/api/allocations` | Tạo allocation |
-| PUT    | `/api/allocations/{id}` | Cập nhật allocation |
-| DELETE | `/api/allocations/{id}` | Xóa allocation |
-| GET    | `/api/employees/{id}/workload` | Workload nhân viên |
+| POST | `/allocations` | Tạo allocation |
+| GET | `/allocations` | Danh sách tất cả |
+| GET | `/allocations/{id}` | Chi tiết |
+| PUT | `/allocations/{id}` | Cập nhật |
+| DELETE | `/allocations/{id}` | Xóa |
+| GET | `/employees/{id}/workload` | Workload nhân viên |
 
 ### Reports
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
-| GET    | `/api/reports/utilization` | Báo cáo utilization |
-| GET    | `/api/v1/reports/available-resources` | Nhân viên còn available |
-| GET    | `/api/reports/overloaded` | Nhân viên quá tải |
+| GET | `/reports/utilization` | Báo cáo utilization |
+| GET | `/reports/available-resources` | Nhân viên còn available |
+| GET | `/reports/overloaded` | Nhân viên quá tải |
 
-### AI (Google Gemini)
+### AI
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
-| POST   | `/api/v1/ai/recommend` | Gợi ý resource theo ngôn ngữ tự nhiên |
-| POST   | `/api/v1/ai/risk-analysis` | Phân tích rủi ro capacity |
+| POST | `/ai/recommend` | Gợi ý resource theo ngôn ngữ tự nhiên |
+| POST | `/ai/risk-analysis` | Phân tích rủi ro capacity |
 
-> **Yêu cầu:** Google Gemini API key trong `be/.env` (`GEMINI_API_KEY=...`)
+> **Cách hoạt động:**
+> 1. LLM (OpenRouter/Gemini) phân tích câu hỏi ngôn ngữ tự nhiên → trích xuất tham số
+> 2. Java query DB bằng Repository (AI **KHÔNG** tự query DB)
+> 3. LLM hoặc Java sinh explanation
 >
-> **Cách hoạt động:** AI (Gemini) phân tích câu hỏi ngôn ngữ tự nhiên → Java query DB bằng Repository → AI giải thích kết quả. AI KHÔNG tự query DB — chỉ parse NL và sinh explanation.
+> Có **3 tầng fallback**: LLM → LLM retry → Java regex (xem chi tiết tại `docs/AIIntegrate/AIIntegrate.md`)
 
-**Ví dụ AI Recommend:**
+**Ví dụ:**
 ```bash
+# AI Recommend
 curl -X POST http://localhost:8080/api/v1/ai/recommend \
   -H "Content-Type: application/json" \
   -d '{"query": "Tìm Java Developer còn tối thiểu 50% available"}'
-```
 
-**Ví dụ AI Risk Analysis:**
-```bash
+# AI Risk Analysis
 curl -X POST http://localhost:8080/api/v1/ai/risk-analysis \
   -H "Content-Type: application/json" \
   -d '{"query": "Sprint tới cần thêm 2 Java Developer"}'
 ```
+
+---
+
 ## Business Rules
 
-1. **0 < allocation <= 100** — allocation phải từ 1% đến 100%
+1. **0 < allocation <= 100%** — allocation phải từ 1% đến 100%
 2. **Tổng allocation ≤ 100%** — 1 employee không thể làm quá 100% thời gian
 3. **Không allocate vào COMPLETED project** — dự án đã kết thúc
+4. **endDate >= startDate** — date range hợp lệ
+5. **Không overlap** — không 2 allocation trùng thời gian cùng employee + project
 
 ## Entity Relationship
 
 ```
 Employee (1) ──── (*) Allocation (*) ──── (1) Project
 ```
+
+Xem chi tiết tại [docs/db/DBDesign.md](docs/db/DBDesign.md)
+
+---
+
+## Documents
+
+| File | Mô tả |
+|------|-------|
+| [docs/requirements-analysis.md](docs/requirements-analysis.md) | Phân tích yêu cầu & quyết định triển khai |
+| [docs/db/DBDesign.md](docs/db/DBDesign.md) | Database design chi tiết |
+| [docs/AIIntegrate/AIIntegrate.md](docs/AIIntegrate/AIIntegrate.md) | AI integration architecture & fallback |
+| [docs/fe/fe-mapping-doc.md](docs/fe/fe-mapping-doc.md) | FE-BE mapping |
+| [docs/fe/architecture.md](docs/fe/architecture.md) | FE architecture |
+| [docs/fe/screen.md](docs/fe/screen.md) | Screen specifications |
+| [Project_Resource_Allocation_Assignment.md](Project_Resource_Allocation_Assignment.md) | Yêu cầu gốc |
+
+---
 
 ## Commit Convention
 
@@ -188,11 +273,16 @@ type(scope): message
 - `refactor`: Refactor code
 - `test`: Test
 
+---
+
 ## Deliverables
 
 - [x] Source Code Git Repository
 - [x] SQL Script Create Table
 - [x] README.md
+- [x] Database Design Document
+- [x] AI Integration Document
+- [x] Frontend Architecture & Mapping
 - [ ] Postman Collection
 - [ ] API Screenshot
 - [ ] AI Review Report

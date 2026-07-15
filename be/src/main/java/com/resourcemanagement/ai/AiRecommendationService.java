@@ -17,25 +17,30 @@ import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Service xử lý AI features dùng Google Gemini API qua RestClient.
- *
- * Cách hoạt động — Hybrid Architecture:
- * 1. Gemini phân tích natural language query → trích xuất tham số tìm kiếm (JSON mode)
- * 2. Java code query DB bằng Repository (không để AI tự query)
- * 3. Gemini giải thích kết quả bằng ngôn ngữ tự nhiên
- *
- * ⚠️ AI KHÔNG tự query DB — nó chỉ parse NL và sinh explanation.
- * Query DB do Java code thực hiện → an toàn, chính xác, có kiểm soát.
+ * Service xử lý AI features với 3 tầng fallback:
+ * <p>
+ * Tầng 1 — OpenRouter (GPT-4o-mini) hoặc Google Gemini
+ * Tầng 2 — Retry với prompt đơn giản hơn nếu tầng 1 fail
+ * Tầng 3 — Java regex fallbackParse (không cần AI)
+ * <p>
+ * Kiến trúc Hybrid:
+ * - LLM chỉ parse NL query + sinh explanation (không tự query DB)
+ * - Java code query DB bằng Repository — an toàn, chính xác
  */
 @Service
 public class AiRecommendationService {
 
     private static final Logger log = LoggerFactory.getLogger(AiRecommendationService.class);
-    private static final int MAX_ALLOCATION = 100;
+
+    // OpenRouter
+    private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+    private static final String OPENROUTER_DEFAULT_MODEL = "google/gemma-4-31b:free";
+
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
     private final RestClient restClient;
@@ -43,229 +48,410 @@ public class AiRecommendationService {
     private final ResourceTools resourceTools;
     private final EmployeeRepository employeeRepository;
     private final AllocationRepository allocationRepository;
+    private final boolean useOpenRouter;
+    private final String modelName;
 
     public AiRecommendationService(@Value("${GEMINI_API_KEY:}") String apiKey,
+                                    @Value("${AI_MODEL:}") String aiModel,
                                     ResourceTools resourceTools,
                                     EmployeeRepository employeeRepository,
                                     AllocationRepository allocationRepository) {
-        this.restClient = RestClient.builder()
-                .baseUrl(GEMINI_API_URL + "?key=" + apiKey)
-                .defaultHeader("Content-Type", "application/json")
-                .build();
+        this.useOpenRouter = apiKey != null && apiKey.startsWith("sk-or");
         this.objectMapper = new ObjectMapper();
         this.resourceTools = resourceTools;
         this.employeeRepository = employeeRepository;
         this.allocationRepository = allocationRepository;
+
+        if (useOpenRouter) {
+            this.modelName = (aiModel != null && !aiModel.isBlank()) ? aiModel : OPENROUTER_DEFAULT_MODEL;
+            log.info("Using OpenRouter AI provider, model: {}", modelName);
+            this.restClient = RestClient.builder()
+                    .baseUrl(OPENROUTER_API_URL)
+                    .defaultHeader("Content-Type", "application/json")
+                    .defaultHeader("Authorization", "Bearer " + apiKey)
+                    .defaultHeader("HTTP-Referer", "http://localhost:5173")
+                    .defaultHeader("X-Title", "Resource Management System")
+                    .build();
+        } else {
+            this.modelName = null;
+            log.info("Using Google Gemini AI provider");
+            this.restClient = RestClient.builder()
+                    .baseUrl(GEMINI_API_URL + "?key=" + apiKey)
+                    .defaultHeader("Content-Type", "application/json")
+                    .build();
+        }
     }
 
     // ======================== Public API ========================
 
     /**
-     * AI Resource Recommendation.
-     * User nhập NL query → AI phân tích → Java query DB → trả về danh sách đề xuất.
+     * AI Resource Recommendation với 3 tầng fallback.
      */
     public AiRecommendationResponse recommend(String query) {
         log.info("AI recommend request: {}", query);
 
-        // Bước 1: Gemini parse NL query → trích xuất tham số
-        SearchCriteria criteria = extractSearchCriteria(query);
+        // Tầng 1 + 2: LLM parse → fallback regex nếu LLM fail
+        SearchCriteria criteria = extractSearchCriteriaWithFallback(query);
 
-        // Bước 2: Java query DB với tham số đã trích xuất
+        // Query DB với criteria đã parse
         List<RecommendedResource> resources = findResources(criteria);
 
-        // Bước 3: Gemini giải thích kết quả
-        String explanation = generateRecommendationExplanation(query, criteria, resources);
+        // Sinh explanation (dùng LLM nếu được, ko thì hardcoded thông minh)
+        String explanation = generateSmartExplanation(query, criteria, resources);
 
-        // Bước 4: Warning nếu không tìm thấy
+        // Warning nếu empty
         List<String> warnings = new ArrayList<>();
         if (resources.isEmpty()) {
-            warnings.add("No matching resources found. Consider adjusting criteria.");
+            String hint = buildEmptyResultHint(criteria);
+            warnings.add(hint);
         }
 
         return new AiRecommendationResponse(query, explanation, resources, warnings.isEmpty() ? null : warnings);
     }
 
     /**
-     * AI Risk Detection.
-     * User nhập NL query → AI phân tích → Java lấy report → AI đánh giá risk.
+     * AI Risk Detection với fallback hoàn chỉnh bằng Java.
      */
     public RiskAnalysisResponse analyzeRisk(String query) {
         log.info("AI risk analysis request: {}", query);
 
-        // Bước 1: Gemini parse để hiểu user cần gì
-        RiskContext riskContext = extractRiskContext(query);
+        // Bước 1: Parse context — LLM → fallback
+        RiskContext riskContext = extractRiskContextWithFallback(query);
 
-        // Bước 2: Java lấy dữ liệu từ DB (hoàn toàn chủ động, không qua AI)
+        // Bước 2: Java query DB
         List<ResourceTools.EmployeeUtilization> overloaded = resourceTools.getOverloadedResources();
         List<ResourceTools.EmployeeUtilization> available = resourceTools.getAvailableResources();
         List<ResourceTools.RoleCount> roleCounts = resourceTools.countEmployeesByRole();
         long totalAllocated = allocationRepository.countDistinctAllocatedEmployees();
         long totalEmployees = employeeRepository.count();
 
-        // Bước 3: Gemini đánh giá risk dựa trên số liệu thực từ DB
-        String riskDataJson = buildRiskDataJson(riskContext, overloaded, available, roleCounts, totalAllocated, totalEmployees);
-        String assessment = generateRiskAssessment(query, riskDataJson);
-
-        // Bước 4: Java tính risk items từ số liệu (logic chủ động, không phụ thuộc AI)
+        // Bước 3: Risk items + suggestions luôn tính bằng Java
         List<RiskItem> riskItems = calculateRiskItems(overloaded, available, totalEmployees, totalAllocated);
-
-        // Bước 5: Suggestions từ Java
         List<String> suggestions = calculateSuggestions(riskItems, available.size());
+
+        // Bước 4: Assessment — LLM → fallback Java
+        String assessment = generateRiskAssessmentWithFallback(query, riskContext, overloaded, available,
+                totalAllocated, totalEmployees);
 
         return new RiskAnalysisResponse(query, assessment, riskItems, suggestions);
     }
 
-    // ======================== Gemini API calls ========================
+    // ======================== LLM API calls với fallback ========================
 
     /**
-     * Gọi Gemini API với prompt, trả về text content.
-     * Dùng RestClient thuần — không cần Spring AI dependency.
+     * Gọi LLM — nếu fail trả về empty để fallback xử lý.
      */
-    private String callGemini(String prompt) {
-        try {
-            // Build request body
-            String requestBody = objectMapper.writeValueAsString(new GeminiRequest(prompt));
+    private String callLLM(String prompt) {
+        return callLLMWithModel(prompt);
+    }
 
-            // Call API
+    /**
+     * Gọi LLM — có fallback retry khi fail.
+     */
+    private String callLLMWithModel(String prompt) {
+        // Attempt 1: gọi LLM
+        String result = tryCallLLM(prompt);
+        if (!result.isEmpty()) return result;
+
+        // Attempt 2: thử với prompt rút gọn (loại bỏ instruction phức tạp)
+        log.info("LLM call failed, retrying with simplified prompt");
+        String simplePrompt = prompt.length() > 1000 ? prompt.substring(0, 1000) : prompt;
+        result = tryCallLLM(simplePrompt);
+        if (!result.isEmpty()) return result;
+
+        log.warn("All LLM attempts failed");
+        return "";
+    }
+
+    private String tryCallLLM(String prompt) {
+        try {
+            String requestBody;
+            if (useOpenRouter) {
+                requestBody = objectMapper.writeValueAsString(Map.of(
+                        "model", modelName,
+                        "messages", List.of(Map.of("role", "user", "content", prompt)),
+                        "temperature", 0.2,
+                        "max_tokens", 1024
+                ));
+            } else {
+                requestBody = objectMapper.writeValueAsString(new GeminiRequest(prompt));
+            }
+
             String responseBody = restClient.post()
                     .body(requestBody)
                     .retrieve()
                     .body(String.class);
 
-            // Parse response
             JsonNode root = objectMapper.readTree(responseBody);
-            JsonNode text = root.path("candidates").get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text");
-            return text.asText();
-
+            if (useOpenRouter) {
+                String content = root.path("choices").get(0)
+                        .path("message").path("content")
+                        .asText();
+                if (!content.isEmpty() && !content.isBlank()) return content;
+            } else {
+                String text = root.path("candidates").get(0)
+                        .path("content").path("parts").get(0)
+                        .path("text").asText();
+                if (!text.isEmpty() && !text.isBlank()) return text;
+            }
         } catch (Exception e) {
-            log.warn("Gemini API call failed: {}", e.getMessage());
-            return "";
+            log.warn("LLM call attempt failed: {}", e.getMessage());
         }
+        return "";
     }
 
     /**
-     * Gọi Gemini với response ở dạng JSON.
+     * Gọi LLM với JSON response — 3 tầng fallback.
      */
-    private <T> T callGeminiJson(String prompt, Class<T> responseType) {
+    private <T> T callLLMJsonWithFallback(String prompt, Class<T> responseType,
+                                          String simplePromptFallback) {
+        // Tầng 1: Full prompt với primary model
         String jsonPrompt = prompt + "\n\nReturn ONLY valid JSON, no markdown, no explanation.";
-        String response = callGemini(jsonPrompt);
+        String response = callLLM(jsonPrompt);
+        T result = parseJsonResponse(response, responseType);
+        if (result != null) return result;
 
-        // Clean response — loại bỏ markdown code block nếu có
-        response = response.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
-
-        if (response.isEmpty()) {
-            return null;
+        // Tầng 2: Simple prompt (nếu có)
+        if (simplePromptFallback != null) {
+            log.info("LLM JSON parsing failed, trying simplified prompt");
+            String simpleJsonPrompt = simplePromptFallback + "\n\nReturn ONLY valid JSON.";
+            response = callLLM(simpleJsonPrompt);
+            result = parseJsonResponse(response, responseType);
+            if (result != null) return result;
         }
 
+        return null; // Tầng 3: caller xử lý fallback
+    }
+
+    private <T> T parseJsonResponse(String response, Class<T> responseType) {
+        if (response == null || response.isEmpty()) return null;
+        String cleaned = response.replaceAll("```json\\s*", "")
+                .replaceAll("```\\s*", "").trim();
+        if (cleaned.isEmpty()) return null;
         try {
-            return objectMapper.readValue(response, responseType);
+            return objectMapper.readValue(cleaned, responseType);
         } catch (JsonProcessingException e) {
-            log.warn("Failed to parse Gemini JSON response: {}", e.getMessage());
+            log.warn("Failed to parse JSON response: {}", e.getMessage());
             return null;
         }
     }
 
-    // ======================== Parse & Extract ========================
+    // ======================== Extract với fallback ========================
 
-    private SearchCriteria extractSearchCriteria(String query) {
-        String prompt = """
-                You are a resource allocation assistant. Extract search criteria from the user's request below.
-                Return a JSON object with these fields (all nullable):
-                - "role": the job role or skill mentioned (e.g. "Java Developer", "Senior Developer", "Designer"). Use null if not specified.
-                - "department": the department name if mentioned (e.g. "IT", "FSOFT-Q1"). Use null if not specified.
-                - "minAvailable": minimum available percentage as a number (e.g. 50 means at least 50%% free time). Use null if not specified.
+    /**
+     * Trích xuất search criteria — 3 tầng: LLM → LLM đơn giản → Java regex.
+     */
+    private SearchCriteria extractSearchCriteriaWithFallback(String query) {
+        // Tầng 1: Full prompt
+        String fullPrompt = """
+                Extract search criteria from the user query below.
+                Return JSON: {"role": string|null, "department": string|null, "minAvailable": number|null}
+                role = just the job title (e.g. "Developer" from "Java Developer"), NOT the full phrase.
+                minAvailable = minimum free percentage as number (e.g. 50).
+
+                Examples:
+                "Tìm Java Developer còn tối thiểu 50%% available" → {"role":"Developer","department":null,"minAvailable":50}
+                "Find Senior Developer in FSOFT-Q1 with 30%% free" → {"role":"Senior Developer","department":"FSOFT-Q1","minAvailable":30}
 
                 Query: %s
                 """.formatted(query);
 
-        SearchCriteria criteria = callGeminiJson(prompt, SearchCriteria.class);
-        if (criteria == null) {
-            log.warn("Gemini extractSearchCriteria returned null, using fallback");
-            return fallbackParse(query);
+        // Tầng 2: Simple prompt
+        String simplePrompt = """
+                Return JSON: {"role": string or null, "department": string or null, "minAvailable": number or null}
+                Query: %s
+                """.formatted(query);
+
+        SearchCriteria criteria = callLLMJsonWithFallback(fullPrompt, SearchCriteria.class, simplePrompt);
+        if (criteria != null && isValidCriteria(criteria)) {
+            log.info("LLM parsed criteria: role={}, dept={}, minAvail={}",
+                    criteria.role, criteria.department, criteria.minAvailable);
+            return criteria;
         }
-        return criteria;
+
+        // Tầng 3: Java regex fallback
+        log.warn("LLM criteria parsing failed, using Java regex fallback");
+        return fallbackParse(query);
     }
 
-    private RiskContext extractRiskContext(String query) {
-        String prompt = """
-                Extract risk analysis context from the user's request below.
-                Return a JSON object with these fields:
-                - "requestDescription": short description of what the user wants (e.g. "need 2 more Java Devs")
-                - "requestedHeadcount": number of people requested, or null if not specified
-                - "roleNeeded": the role/title mentioned, or null if not specified
+    private boolean isValidCriteria(SearchCriteria c) {
+        return (c.role != null && !c.role.isBlank())
+                || (c.department != null && !c.department.isBlank())
+                || c.minAvailable != null;
+    }
 
+    /**
+     * Trích xuất risk context — 3 tầng: LLM → LLM đơn giản → Java regex.
+     */
+    private RiskContext extractRiskContextWithFallback(String query) {
+        String fullPrompt = """
+                Extract risk analysis context. Return JSON:
+                {"requestDescription": string, "requestedHeadcount": number|null, "roleNeeded": string|null}
                 Query: %s
                 """.formatted(query);
 
-        RiskContext ctx = callGeminiJson(prompt, RiskContext.class);
-        return ctx != null ? ctx : new RiskContext(query, null, null);
+        String simplePrompt = """
+                Return JSON: {"requestDescription": string, "requestedHeadcount": number|null, "roleNeeded": string|null}
+                Query: %s
+                """.formatted(query);
+
+        RiskContext ctx = callLLMJsonWithFallback(fullPrompt, RiskContext.class, simplePrompt);
+        if (ctx != null) return ctx;
+
+        // Fallback: parse bằng Java
+        return fallbackParseRiskContext(query);
     }
 
-    // ======================== Explanation & Assessment ========================
+    // ======================== Explanation với fallback ========================
 
-    private String generateRecommendationExplanation(String query, SearchCriteria criteria,
-                                                      List<RecommendedResource> resources) {
+    /**
+     * Sinh explanation — LLM → hardcoded thông minh (có statistics).
+     */
+    private String generateSmartExplanation(String query, SearchCriteria criteria,
+                                            List<RecommendedResource> resources) {
+        if (!resources.isEmpty()) {
+            // Thử dùng LLM để sinh explanation tự nhiên
+            String prompt = """
+                    You are a resource assistant. Explain these search results in Vietnamese (2-3 sentences).
+                    Query: "%s"
+                    Found %d matching resource(s). List their names, roles, and available percentages.
+                    """.formatted(query, resources.size());
+
+            String llmResult = callLLM(prompt);
+            if (!llmResult.isEmpty()) return llmResult;
+        }
+
+        // Fallback: hardcoded thông minh
         if (resources.isEmpty()) {
-            return "Không tìm thấy resource phù hợp với yêu cầu của bạn. Hãy thử giảm yêu cầu % available hoặc tìm role khác.";
+            StringBuilder sb = new StringBuilder();
+            sb.append("Không tìm thấy resource phù hợp.");
+            if (criteria.role != null) {
+                sb.append(" Yêu cầu role: \"").append(criteria.role).append("\".");
+            }
+            if (criteria.minAvailable != null) {
+                sb.append(" Yêu cầu available tối thiểu: ").append(criteria.minAvailable).append("%.");
+            }
+            sb.append(" Thử giảm yêu cầu hoặc tìm role khác.");
+            return sb.toString();
         }
 
+        // Fallback: tự sinh explanation từ dữ liệu
         StringBuilder sb = new StringBuilder();
         sb.append("Dựa trên yêu cầu của bạn, tôi tìm thấy ").append(resources.size()).append(" resource phù hợp:\n\n");
         for (RecommendedResource r : resources) {
             sb.append("• **").append(r.employeeName()).append("** — ")
-              .append(r.role()).append(" (").append(r.department()).append(")")
-              .append(" — available: **").append(r.available()).append("%**");
+                    .append(r.role()).append(" (").append(r.department()).append(")")
+                    .append(" — available: **").append(r.available()).append("%**");
             if (r.currentProjects() != null && !r.currentProjects().isEmpty()) {
                 sb.append(" — Dự án hiện tại: ").append(String.join(", ", r.currentProjects()));
             }
             sb.append("\n");
         }
         sb.append("\n💡 *Bạn có thể liên hệ trực tiếp với các resource trên để thảo luận về việc phân bổ công việc.*");
-
         return sb.toString();
     }
 
-    private String buildRiskDataJson(RiskContext ctx,
-                                      List<ResourceTools.EmployeeUtilization> overloaded,
-                                      List<ResourceTools.EmployeeUtilization> available,
-                                      List<ResourceTools.RoleCount> roleCounts,
-                                      long totalAllocated, long totalEmployees) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\n");
-        sb.append("  \"totalEmployees\": ").append(totalEmployees).append(",\n");
-        sb.append("  \"currentlyAllocated\": ").append(totalAllocated).append(",\n");
-        sb.append("  \"overloadedCount\": ").append(overloaded.size()).append(",\n");
-        sb.append("  \"availableCount\": ").append(available.size()).append(",\n");
-        sb.append("  \"requestedHeadcount\": ").append(ctx.requestedHeadcount() != null ? ctx.requestedHeadcount() : "null").append(",\n");
-        sb.append("  \"roleNeeded\": ").append(ctx.roleNeeded() != null ? "\"" + ctx.roleNeeded() + "\"" : "null").append(",\n");
-        sb.append("  \"requestDescription\": \"").append(ctx.requestDescription()).append("\"\n");
-        sb.append("}");
-        return sb.toString();
+    /**
+     * Warning thông minh khi không tìm thấy.
+     */
+    private String buildEmptyResultHint(SearchCriteria criteria) {
+        List<String> hints = new ArrayList<>();
+        hints.add("No matching resources found.");
+
+        if (criteria.role != null) {
+            // Đếm tổng employee theo role để gợi ý
+            long totalByRole = employeeRepository.findByRoleContainingIgnoreCase(criteria.role).size();
+            if (totalByRole > 0) {
+                hints.add("There are " + totalByRole + " employee(s) with role containing \"" + criteria.role
+                        + "\" but none meet the available threshold.");
+            } else {
+                hints.add("No employees found with role containing \"" + criteria.role + "\".");
+                // Gợi ý các role có trong DB
+                List<String> allRoles = employeeRepository.findAll().stream()
+                        .map(e -> e.getRole())
+                        .distinct()
+                        .toList();
+                if (!allRoles.isEmpty()) {
+                    hints.add("Available roles in system: " + String.join(", ", allRoles) + ".");
+                }
+            }
+        }
+
+        if (criteria.minAvailable != null && criteria.minAvailable > 0) {
+            hints.add("Try reducing the minimum available percentage.");
+        }
+
+        hints.add("Consider adjusting your search criteria.");
+        return String.join(" ", hints);
     }
 
-    private String generateRiskAssessment(String query, String riskDataJson) {
+    // ======================== Risk Assessment với fallback ========================
+
+    /**
+     * Risk assessment — LLM → Java tự đánh giá (không static message).
+     */
+    private String generateRiskAssessmentWithFallback(String query,
+                                                      RiskContext riskContext,
+                                                      List<ResourceTools.EmployeeUtilization> overloaded,
+                                                      List<ResourceTools.EmployeeUtilization> available,
+                                                      long totalAllocated, long totalEmployees) {
+        // Tầng 1: Dùng LLM
+        String riskDataJson = buildRiskDataJson(riskContext, overloaded, available, null,
+                totalAllocated, totalEmployees);
         String prompt = """
-                You are a risk assessment assistant for resource management.
-                Analyze the risk based on the data below and the user's request.
-
+                Analyze capacity risk. Return a concise assessment in Vietnamese (2-4 sentences).
                 User request: %s
-
-                Current data: %s
-
-                Provide a concise risk assessment in Vietnamese (2-4 sentences).
-                Focus on: capacity issues, potential bottlenecks, and whether the request is feasible.
+                Data: %s
                 """.formatted(query, riskDataJson);
 
-        String assessment = callGemini(prompt);
-        if (assessment.isEmpty()) {
-            return "Không thể tạo đánh giá rủi ro tự động. Vui lòng kiểm tra dữ liệu thủ công.";
-        }
-        return assessment;
+        String llmResult = callLLM(prompt);
+        if (!llmResult.isEmpty()) return llmResult;
+
+        // Tầng 2: Java tự sinh assessment từ số liệu
+        return buildJavaRiskAssessment(overloaded, available, totalAllocated, totalEmployees, riskContext);
     }
 
-    // ======================== DB Query Helpers ========================
+    /**
+     * Java tự đánh giá risk dựa trên số liệu — không cần LLM.
+     */
+    private String buildJavaRiskAssessment(List<ResourceTools.EmployeeUtilization> overloaded,
+                                           List<ResourceTools.EmployeeUtilization> available,
+                                           long totalAllocated, long totalEmployees,
+                                           RiskContext riskContext) {
+        double utilizationRate = totalEmployees > 0
+                ? (double) totalAllocated / totalEmployees * 100 : 0;
+        long trulyAvailable = available.stream()
+                .filter(a -> a.totalAllocation() < 50)
+                .count();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Đánh giá capacity hiện tại:\n");
+
+        sb.append("- ").append(totalAllocated).append("/").append(totalEmployees)
+                .append(" nhân viên đã được allocate (").append(String.format("%.0f", utilizationRate)).append("%).\n");
+
+        if (!overloaded.isEmpty()) {
+            sb.append("- ").append(overloaded.size()).append(" nhân viên đang quá tải (>90%). ");
+            sb.append("Cần cân nhắc phân bổ lại.\n");
+        }
+
+        sb.append("- ").append(trulyAvailable).append(" người còn >50% quỹ thời gian.\n");
+
+        if (riskContext.requestedHeadcount() != null) {
+            if (trulyAvailable >= riskContext.requestedHeadcount()) {
+                sb.append("Yêu cầu thêm ").append(riskContext.requestedHeadcount())
+                        .append(" người khả thi về mặt số lượng, nhưng cần kiểm tra kỹ năng phù hợp.\n");
+            } else {
+                sb.append("Yêu cầu thêm ").append(riskContext.requestedHeadcount())
+                        .append(" người KHÔNG khả thi với capacity hiện tại (chỉ còn ")
+                        .append(trulyAvailable).append(" người có quỹ thời gian lớn).\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    // ======================== Java Fallback Parsers ========================
 
     private SearchCriteria fallbackParse(String query) {
         String role = null;
@@ -273,31 +459,48 @@ public class AiRecommendationService {
         Integer minAvailable = null;
         String lower = query.toLowerCase();
 
-        // Role keywords
-        String[] roleKeywords = {"developer", "designer", "tester", "pm", "ba", "senior", "junior", "java",
-                                 "frontend", "backend", "dev", "leader", "architect", "fresher"};
-        for (String kw : roleKeywords) {
-            if (lower.contains(kw)) {
-                int idx = lower.indexOf(kw);
-                int start = Math.max(0, idx - 15);
-                int end = Math.min(lower.length(), idx + kw.length() + 15);
-                role = query.substring(start, end).trim();
+        // --- Parse role: multi-level ---
+        // Level 1: tìm cụm 2-word phổ biến
+        String[][] rolePhrases = {
+            {"senior developer", "developer"}, {"junior developer", "developer"},
+            {"frontend developer", "developer"}, {"backend developer", "developer"},
+            {"java developer", "developer"}, {"fullstack developer", "developer"},
+            {"tech lead", "lead"}, {"team lead", "lead"},
+            {"business analyst", "ba"}, {"ba", "ba"}
+        };
+        for (String[] phrase : rolePhrases) {
+            if (lower.contains(phrase[0])) {
+                role = phrase[1];
                 break;
             }
         }
 
-        // Department
-        if (lower.contains("it") || lower.contains("fsoft") || lower.contains("technology")) department = "IT";
-        if (lower.contains("design") || lower.contains("ui") || lower.contains("ux")) department = "Design";
-        if (lower.contains("hr") || lower.contains("human resource")) department = "HR";
+        // Level 2: single keywords (nếu chưa tìm thấy)
+        if (role == null) {
+            String[] roleKeywords = {"developer", "designer", "tester", "pm", "ba",
+                    "senior", "junior", "java", "frontend", "backend", "dev",
+                    "leader", "architect", "fresher"};
+            for (String kw : roleKeywords) {
+                if (lower.contains(kw)) {
+                    role = kw;
+                    break;
+                }
+            }
+        }
 
-        // Số %
+        // --- Parse department ---
+        if (lower.contains("fsoft") || lower.contains("q1")) department = "FSOFT-Q1";
+        if (lower.contains("q2")) department = "FSOFT-Q2";
+        if (lower.contains("it")) department = "IT";
+        if (lower.contains("design") || lower.contains("ui") || lower.contains("ux")) department = "Design";
+        if (lower.contains("hr")) department = "HR";
+
+        // --- Parse minAvailable ---
         Pattern p = Pattern.compile("(\\d+)\\s*%");
         Matcher m = p.matcher(lower);
         if (m.find()) {
             minAvailable = Integer.parseInt(m.group(1));
         } else {
-            // fallback: tìm số bất kỳ
             String[] words = lower.split("\\s+");
             for (String w : words) {
                 String digits = w.replaceAll("[^0-9]", "");
@@ -316,6 +519,33 @@ public class AiRecommendationService {
         return new SearchCriteria(role, department, minAvailable);
     }
 
+    private RiskContext fallbackParseRiskContext(String query) {
+        String lower = query.toLowerCase();
+        Integer headcount = null;
+        String roleNeeded = null;
+
+        // Parse headcount: "thêm 2 người", "cần 3 devs", "2 Java Developer"
+        Pattern numPattern = Pattern.compile("(\\d+)\\s*(người|developer|dev|tester|ba|pm|senior|junior)");
+        Matcher m = numPattern.matcher(lower);
+        if (m.find()) {
+            headcount = Integer.parseInt(m.group(1));
+        }
+
+        // Parse role từ query
+        String[] roleKeywords = {"developer", "designer", "tester", "pm", "ba",
+                "senior", "junior", "java", "frontend", "backend"};
+        for (String kw : roleKeywords) {
+            if (lower.contains(kw)) {
+                roleNeeded = kw;
+                break;
+            }
+        }
+
+        return new RiskContext(query, headcount, roleNeeded);
+    }
+
+    // ======================== DB Query Helpers ========================
+
     private List<RecommendedResource> findResources(SearchCriteria criteria) {
         if (criteria.role != null && !criteria.role.isBlank()) {
             int minAvail = criteria.minAvailable != null ? criteria.minAvailable : 0;
@@ -327,7 +557,7 @@ public class AiRecommendationService {
         }
     }
 
-    // ======================== Risk Logic (Java, not AI) ========================
+    // ======================== Risk Logic (100% Java) ========================
 
     private List<RiskItem> calculateRiskItems(List<ResourceTools.EmployeeUtilization> overloaded,
                                                List<ResourceTools.EmployeeUtilization> available,
@@ -404,22 +634,40 @@ public class AiRecommendationService {
         return suggestions;
     }
 
+    private String buildRiskDataJson(RiskContext ctx,
+                                      List<ResourceTools.EmployeeUtilization> overloaded,
+                                      List<ResourceTools.EmployeeUtilization> available,
+                                      List<ResourceTools.RoleCount> roleCounts,
+                                      long totalAllocated, long totalEmployees) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        sb.append("  \"totalEmployees\": ").append(totalEmployees).append(",\n");
+        sb.append("  \"currentlyAllocated\": ").append(totalAllocated).append(",\n");
+        sb.append("  \"overloadedCount\": ").append(overloaded.size()).append(",\n");
+        sb.append("  \"availableCount\": ").append(available.size()).append(",\n");
+        sb.append("  \"requestedHeadcount\": ").append(ctx.requestedHeadcount() != null ? ctx.requestedHeadcount() : "null").append(",\n");
+        sb.append("  \"roleNeeded\": ").append(ctx.roleNeeded() != null ? "\"" + ctx.roleNeeded() + "\"" : "null").append(",\n");
+        sb.append("  \"requestDescription\": \"").append(ctx.requestDescription()).append("\"\n");
+        sb.append("}");
+        return sb.toString();
+    }
+
     // ======================== Inner types ========================
 
-    /**
-     * Search criteria parsed from NL query.
-     */
     private record SearchCriteria(String role, String department, Integer minAvailable) {}
-
-    /**
-     * Context extracted for risk analysis.
-     */
     private record RiskContext(String requestDescription, Integer requestedHeadcount, String roleNeeded) {}
 
     /**
      * Gemini API request body model.
      */
-    private record GeminiRequest(String contents) {
-        public String getContents() { return contents; }
+    private static class GeminiRequest {
+        public Content[] contents;
+
+        public GeminiRequest(String text) {
+            this.contents = new Content[]{ new Content(new Part[]{ new Part(text) }) };
+        }
+
+        public record Content(Part[] parts) {}
+        public record Part(String text) {}
     }
 }

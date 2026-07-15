@@ -29,3 +29,6 @@ logging:
   level:
     com.resourcemanagement: DEBUG
     org.springframework: INFO
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}

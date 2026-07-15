@@ -10,6 +10,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -61,6 +62,17 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(400,
                         "Invalid request body. Check date format (yyyy-MM-dd) and JSON syntax.",
                         "MALFORMED_REQUEST"));
+    }
+
+    // Type mismatch — ví dụ: String "abc" vào @PathVariable Long
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        log.warn("Type mismatch: {} should be {}", ex.getName(), ex.getRequiredType());
+        return ResponseEntity
+                .badRequest()
+                .body(ErrorResponse.of(400,
+                        "Invalid value for parameter '" + ex.getName() + "'. Expected type: " + (ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown"),
+                        "TYPE_MISMATCH"));
     }
 
     // Fallback — tất cả exception chưa được xử lý riêng

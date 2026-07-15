@@ -1,0 +1,2827 @@
+{
+  "info": {
+    "_postman_id": "54fe67aa-c48d-47a7-8fcc-729b13307076",
+    "name": "RSManagement-Collection",
+    "description": "Collection API cho Resource Management.\nDữ liệu seed có sẵn trong DB: 4 employees, 3 projects, 4 allocations.\n\n**Base URL:** `http://localhost:8080/api/v1`\n\n## Seed Data Reference\n\n| Entity | ID | Code | Name | Ghi chú |\n|---|---|---|---|---|\n| Employee | 1 | EMP001 | Tuan Ho Anh | Senior Dev, FSOFT-Q1, đã allocate 80% (50% NCG + 30% Grid) |\n| Employee | 2 | EMP002 | Le Thi Minh | Developer, FSOFT-Q1, đã allocate 80% |\n| Employee | 3 | EMP003 | Tran Van Nam | Junior Dev, FSOFT-Q2, đã allocate 60% |\n| Employee | 4 | EMP004 | Pham Thi Lan | Tester, FSOFT-Q1, chưa allocate (available 100%) |\n| Project | 1 | NCG-001 | NCG Platform | ACTIVE, 2024-01-01 → 2024-12-31 |\n| Project | 2 | GRID-001 | Grid System | ACTIVE, 2024-03-01 → 2025-02-28 |\n| Project | 3 | AI-001 | Internal AI Tool | PLANNING, 2024-06-01 → 2024-11-30 |\n| Allocation | 1 | — | Emp 1 → NCG 50% | 2024-01-01 → 2024-12-31 |\n| Allocation | 2 | — | Emp 1 → Grid 30% | 2024-03-01 → 2024-12-31 |\n| Allocation | 3 | — | Emp 2 → NCG 80% | 2024-01-01 → 2024-12-31 |\n| Allocation | 4 | — | Emp 3 → Grid 60% | 2024-03-01 → 2024-12-31 |\n\n## Error Code Reference\n\n| Error Code | HTTP | Ý nghĩa |\n|---|---|---|\n| `VALIDATION_ERROR` | 400 | @Valid validation fail, kèm field-level errors |\n| `MALFORMED_REQUEST` | 400 | JSON sai cú pháp / date sai format |\n| `ALLOCATION_EXCEEDED` | 400 | Tổng allocation > 100% |\n| `INVALID_DATE_RANGE` | 400 | Ngày không hợp lệ (end < start, hoặc trước project start) |\n| `PROJECT_COMPLETED` | 400 | Không thể allocate vào project đã COMPLETED |\n| `EMPLOYEE_CODE_EXISTED` | 409 | Mã nhân viên đã tồn tại |\n| `PROJECT_CODE_EXISTED` | 409 | Mã dự án đã tồn tại |\n| `ALLOCATION_OVERLAP` | 409 | Trùng allocation cùng employee + project + thời gian |\n| `*_NOT_FOUND` | 404 | Resource không tồn tại |\n| `INTERNAL_ERROR` | 500 | Lỗi server không xác định |",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "53292309",
+    "_collection_link": "https://go.postman.co/collection/53292309-54fe67aa-c48d-47a7-8fcc-729b13307076?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "[Success] Get All Employees",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "department",
+                  "value": null,
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": null,
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees?page=0&size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "department",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "role",
+                      "value": null,
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": [\n    {\n      \"employeeId\": 1,\n      \"employeeCode\": \"EMP001\",\n      \"fullName\": \"Tuan Ho Anh\",\n      \"email\": \"tuanha@company.com\",\n      \"role\": \"Senior Developer\",\n      \"department\": \"FSOFT-Q1\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    },\n    {\n      \"employeeId\": 2,\n      \"employeeCode\": \"EMP002\",\n      \"fullName\": \"Le Thi Minh\",\n      \"email\": \"minhlt@company.com\",\n      \"role\": \"Developer\",\n      \"department\": \"FSOFT-Q1\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    },\n    {\n      \"employeeId\": 3,\n      \"employeeCode\": \"EMP003\",\n      \"fullName\": \"Tran Van Nam\",\n      \"email\": \"namtv@company.com\",\n      \"role\": \"Junior Developer\",\n      \"department\": \"FSOFT-Q2\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    },\n    {\n      \"employeeId\": 4,\n      \"employeeCode\": \"EMP004\",\n      \"fullName\": \"Pham Thi Lan\",\n      \"email\": \"lanpt@company.com\",\n      \"role\": \"Tester\",\n      \"department\": \"FSOFT-Q1\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    }\n  ],\n  \"timestamp\": \"2024-01-01T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Get Employee By ID (seed id=1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "1"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": {\n    \"employeeId\": 1,\n    \"employeeCode\": \"EMP001\",\n    \"fullName\": \"Tuan Ho Anh\",\n    \"email\": \"tuanha@company.com\",\n    \"role\": \"Senior Developer\",\n    \"department\": \"FSOFT-Q1\",\n    \"createdAt\": \"2024-01-01T00:00:00\",\n    \"updatedAt\": \"2024-01-01T00:00:00\"\n  },\n  \"timestamp\": \"2024-01-01T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Get Employee By ID (seed id=4)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees/4",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "4"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees/4",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "4"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": {\n    \"employeeId\": 4,\n    \"employeeCode\": \"EMP004\",\n    \"fullName\": \"Pham Thi Lan\",\n    \"email\": \"lanpt@company.com\",\n    \"role\": \"Tester\",\n    \"department\": \"FSOFT-Q1\",\n    \"createdAt\": \"2024-01-01T00:00:00\",\n    \"updatedAt\": \"2024-01-01T00:00:00\"\n  },\n  \"timestamp\": \"2024-01-01T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Filter by Department (FSOFT-Q1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees?page=0&size=20&department=FSOFT-Q1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "department",
+                  "value": "FSOFT-Q1"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees?page=0&size=20&department=FSOFT-Q1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "department",
+                      "value": "FSOFT-Q1"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": [\n    {\n      \"employeeId\": 1,\n      \"employeeCode\": \"EMP001\",\n      \"fullName\": \"Tuan Ho Anh\",\n      \"email\": \"tuanha@company.com\",\n      \"role\": \"Senior Developer\",\n      \"department\": \"FSOFT-Q1\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    },\n    {\n      \"employeeId\": 2,\n      \"employeeCode\": \"EMP002\",\n      \"fullName\": \"Le Thi Minh\",\n      \"email\": \"minhlt@company.com\",\n      \"role\": \"Developer\",\n      \"department\": \"FSOFT-Q1\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    },\n    {\n      \"employeeId\": 4,\n      \"employeeCode\": \"EMP004\",\n      \"fullName\": \"Pham Thi Lan\",\n      \"email\": \"lanpt@company.com\",\n      \"role\": \"Tester\",\n      \"department\": \"FSOFT-Q1\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    }\n  ],\n  \"timestamp\": \"2024-01-01T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Create Employee (dùng mã EMP005)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.expect(jsonData.success).to.be.true;",
+                  "pm.expect(jsonData.status).to.eql(201);",
+                  "pm.collectionVariables.set('employeeId', jsonData.data.employeeId.toString());",
+                  "pm.collectionVariables.set('empCode', jsonData.data.employeeCode);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"EMP005\",\n  \"fullName\": \"Nguyen Van An\",\n  \"email\": \"annv@company.com\",\n  \"role\": \"Developer\",\n  \"department\": \"FSOFT-Q2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeCode\": \"EMP005\",\n  \"fullName\": \"Nguyen Van An\",\n  \"email\": \"annv@company.com\",\n  \"role\": \"Developer\",\n  \"department\": \"FSOFT-Q2\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 201,\n  \"message\": \"Employee created successfully\",\n  \"data\": {\n    \"employeeId\": 5,\n    \"employeeCode\": \"EMP005\",\n    \"fullName\": \"Nguyen Van An\",\n    \"email\": \"annv@company.com\",\n    \"role\": \"Developer\",\n    \"department\": \"FSOFT-Q2\",\n    \"createdAt\": \"2024-06-01T10:00:00\",\n    \"updatedAt\": \"2024-06-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Duplicate Employee Code (EMP001 — 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"EMP001\",\n  \"fullName\": \"Duplicate Code\",\n  \"email\": \"duplicate@company.com\",\n  \"role\": \"Developer\",\n  \"department\": \"FSOFT-Q1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "409 Conflict",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeCode\": \"EMP001\",\n  \"fullName\": \"Duplicate Code\",\n  \"email\": \"duplicate@company.com\",\n  \"role\": \"Developer\",\n  \"department\": \"FSOFT-Q1\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 409,\n  \"message\": \"Employee code already exists: EMP001\",\n  \"errorCode\": \"EMPLOYEE_CODE_EXISTED\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Validation — Blank Fields — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"\",\n  \"fullName\": \"\",\n  \"email\": \"invalid-email\",\n  \"role\": \"\",\n  \"department\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeCode\": \"\",\n  \"fullName\": \"\",\n  \"email\": \"invalid-email\",\n  \"role\": \"\",\n  \"department\": \"\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Validation failed\",\n  \"errorCode\": \"VALIDATION_ERROR\",\n  \"errors\": {\n    \"employeeCode\": \"Employee code is required\",\n    \"fullName\": \"Full name is required\",\n    \"email\": \"Invalid email format\",\n    \"role\": \"Role is required\",\n    \"department\": \"Department is required\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Validation — Bad Code Pattern (abc — 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"abc\",\n  \"fullName\": \"Test\",\n  \"email\": \"test@example.com\",\n  \"role\": \"Developer\",\n  \"department\": \"IT\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeCode\": \"abc\",\n  \"fullName\": \"Test\",\n  \"email\": \"test@example.com\",\n  \"role\": \"Developer\",\n  \"department\": \"IT\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Validation failed\",\n  \"errorCode\": \"VALIDATION_ERROR\",\n  \"errors\": {\n    \"employeeCode\": \"Employee code must be 3-20 uppercase alphanumeric characters\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Update Employee (seed id=1)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"EMP001\",\n  \"fullName\": \"Tuan Ho Anh Updated\",\n  \"email\": \"tuanha@company.com\",\n  \"role\": \"Senior Developer\",\n  \"department\": \"FSOFT-Q1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "1"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeCode\": \"EMP001\",\n  \"fullName\": \"Tuan Ho Anh Updated\",\n  \"email\": \"tuanha@company.com\",\n  \"role\": \"Senior Developer\",\n  \"department\": \"FSOFT-Q1\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Employee updated successfully\",\n  \"data\": {\n    \"employeeId\": 1,\n    \"employeeCode\": \"EMP001\",\n    \"fullName\": \"Tuan Ho Anh Updated\",\n    \"email\": \"tuanha@company.com\",\n    \"role\": \"Senior Developer\",\n    \"department\": \"FSOFT-Q1\",\n    \"createdAt\": \"2024-01-01T00:00:00\",\n    \"updatedAt\": \"2024-06-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Get Employee Not Found (id=9999 — 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees/9999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "9999"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees/9999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "9999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 404,\n  \"message\": \"Employee not found with id: 9999\",\n  \"errorCode\": \"EMPLOYEE_NOT_FOUND\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Update Employee Not Found (id=9999 — 404)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"EMP999\",\n  \"fullName\": \"Not Found\",\n  \"email\": \"notfound@company.com\",\n  \"role\": \"Developer\",\n  \"department\": \"FSOFT-Q1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees/9999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "9999"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeCode\": \"EMP999\",\n  \"fullName\": \"Not Found\",\n  \"email\": \"notfound@company.com\",\n  \"role\": \"Developer\",\n  \"department\": \"FSOFT-Q1\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees/9999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "9999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 404,\n  \"message\": \"Employee not found with id: 9999\",\n  \"errorCode\": \"EMPLOYEE_NOT_FOUND\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "CRUD nhân viên"
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "[Success] Get All Projects",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": null,
+                  "disabled": true
+                },
+                {
+                  "key": "customer",
+                  "value": null,
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/projects?page=0&size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "status",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "customer",
+                      "value": null,
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": [\n    {\n      \"projectId\": 1,\n      \"projectCode\": \"NCG-001\",\n      \"projectName\": \"NCG Platform\",\n      \"customer\": \"NCG Corp\",\n      \"status\": \"ACTIVE\",\n      \"startDate\": \"2024-01-01\",\n      \"endDate\": \"2024-12-31\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    },\n    {\n      \"projectId\": 2,\n      \"projectCode\": \"GRID-001\",\n      \"projectName\": \"Grid System\",\n      \"customer\": \"Grid Inc\",\n      \"status\": \"ACTIVE\",\n      \"startDate\": \"2024-03-01\",\n      \"endDate\": \"2025-02-28\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    },\n    {\n      \"projectId\": 3,\n      \"projectCode\": \"AI-001\",\n      \"projectName\": \"Internal AI Tool\",\n      \"customer\": \"Internal\",\n      \"status\": \"PLANNING\",\n      \"startDate\": \"2024-06-01\",\n      \"endDate\": \"2024-11-30\",\n      \"createdAt\": \"2024-01-01T00:00:00\",\n      \"updatedAt\": \"2024-01-01T00:00:00\"\n    }\n  ],\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Get Project By ID (seed id=1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "1"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/projects/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": {\n    \"projectId\": 1,\n    \"projectCode\": \"NCG-001\",\n    \"projectName\": \"NCG Platform\",\n    \"customer\": \"NCG Corp\",\n    \"status\": \"ACTIVE\",\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-12-31\",\n    \"createdAt\": \"2024-01-01T00:00:00\",\n    \"updatedAt\": \"2024-01-01T00:00:00\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Create Project (dùng code NCG-002)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.expect(jsonData.success).to.be.true;",
+                  "pm.expect(jsonData.status).to.eql(201);",
+                  "pm.collectionVariables.set('projectId', jsonData.data.projectId.toString());",
+                  "pm.collectionVariables.set('projCode', jsonData.data.projectCode);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"NCG-002\",\n  \"projectName\": \"NCG Platform V2\",\n  \"customer\": \"NCG Corp\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectCode\": \"NCG-002\",\n  \"projectName\": \"NCG Platform V2\",\n  \"customer\": \"NCG Corp\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-12-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/projects",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 201,\n  \"message\": \"Project created successfully\",\n  \"data\": {\n    \"projectId\": 4,\n    \"projectCode\": \"NCG-002\",\n    \"projectName\": \"NCG Platform V2\",\n    \"customer\": \"NCG Corp\",\n    \"status\": \"PLANNING\",\n    \"startDate\": \"2025-01-01\",\n    \"endDate\": \"2025-12-31\",\n    \"createdAt\": \"2024-06-01T10:00:00\",\n    \"updatedAt\": \"2024-06-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Duplicate Project Code (NCG-001 — 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"NCG-001\",\n  \"projectName\": \"Duplicate\",\n  \"customer\": \"Test\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2025-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "409 Conflict",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectCode\": \"NCG-001\",\n  \"projectName\": \"Duplicate\",\n  \"customer\": \"Test\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2025-01-01\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/projects",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 409,\n  \"message\": \"Project code already exists: NCG-001\",\n  \"errorCode\": \"PROJECT_CODE_EXISTED\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Validation — Blank Fields — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"\",\n  \"projectName\": \"\",\n  \"customer\": \"\",\n  \"status\": \"\",\n  \"startDate\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectCode\": \"\",\n  \"projectName\": \"\",\n  \"customer\": \"\",\n  \"status\": \"\",\n  \"startDate\": null\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/projects",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Validation failed\",\n  \"errorCode\": \"VALIDATION_ERROR\",\n  \"errors\": {\n    \"projectCode\": \"Project code is required\",\n    \"projectName\": \"Project name is required\",\n    \"customer\": \"Customer is required\",\n    \"status\": \"Status is required\",\n    \"startDate\": \"Start date is required\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Invalid Date Range (end < start — 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"PRJERR\",\n  \"projectName\": \"Bad Date Range\",\n  \"customer\": \"Test\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2025-12-01\",\n  \"endDate\": \"2025-06-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectCode\": \"PRJERR\",\n  \"projectName\": \"Bad Date Range\",\n  \"customer\": \"Test\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2025-12-01\",\n  \"endDate\": \"2025-06-01\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/projects",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"End date must be after or equal to start date\",\n  \"errorCode\": \"INVALID_DATE_RANGE\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Invalid Status Value (INVALID — 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"PRJERR2\",\n  \"projectName\": \"Invalid Status\",\n  \"customer\": \"Test\",\n  \"status\": \"INVALID\",\n  \"startDate\": \"2025-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectCode\": \"PRJERR2\",\n  \"projectName\": \"Invalid Status\",\n  \"customer\": \"Test\",\n  \"status\": \"INVALID\",\n  \"startDate\": \"2025-01-01\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/projects",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Invalid request body. Check date format (yyyy-MM-dd) and JSON syntax.\",\n  \"errorCode\": \"MALFORMED_REQUEST\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Update Project (seed id=1)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"NCG-001\",\n  \"projectName\": \"NCG Platform V2\",\n  \"customer\": \"NCG Corp\",\n  \"status\": \"ACTIVE\",\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2025-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "1"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectCode\": \"NCG-001\",\n  \"projectName\": \"NCG Platform V2\",\n  \"customer\": \"NCG Corp\",\n  \"status\": \"ACTIVE\",\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2025-12-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/projects/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Project updated successfully\",\n  \"data\": {\n    \"projectId\": 1,\n    \"projectCode\": \"NCG-001\",\n    \"projectName\": \"NCG Platform V2\",\n    \"customer\": \"NCG Corp\",\n    \"status\": \"ACTIVE\",\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2025-12-31\",\n    \"createdAt\": \"2024-01-01T00:00:00\",\n    \"updatedAt\": \"2024-06-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Get Project Not Found (id=9999 — 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/9999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "9999"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/projects/9999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects",
+                    "9999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 404,\n  \"message\": \"Project not found with id: 9999\",\n  \"errorCode\": \"PROJECT_NOT_FOUND\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "CRUD dự án"
+    },
+    {
+      "name": "Allocations",
+      "item": [
+        {
+          "name": "[Success] Create Allocation (Emp 4 → Project 3, available 100%)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.expect(jsonData.success).to.be.true;",
+                  "pm.expect(jsonData.status).to.eql(201);",
+                  "pm.collectionVariables.set('allocationId', jsonData.data.allocationId.toString());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 4,\n  \"projectId\": 3,\n  \"allocationPercent\": 50,\n  \"roleInProject\": \"Tester\",\n  \"startDate\": \"2024-06-01\",\n  \"endDate\": \"2024-11-30\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 4,\n  \"projectId\": 3,\n  \"allocationPercent\": 50,\n  \"roleInProject\": \"Tester\",\n  \"startDate\": \"2024-06-01\",\n  \"endDate\": \"2024-11-30\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 201,\n  \"message\": \"Allocation created successfully\",\n  \"data\": {\n    \"allocationId\": 5,\n    \"employeeId\": 4,\n    \"employeeName\": \"Pham Thi Lan\",\n    \"projectId\": 3,\n    \"projectName\": \"Internal AI Tool\",\n    \"projectCode\": \"AI-001\",\n    \"allocationPercent\": 50,\n    \"roleInProject\": \"Tester\",\n    \"startDate\": \"2024-06-01\",\n    \"endDate\": \"2024-11-30\",\n    \"createdAt\": \"2024-06-01T10:00:00\",\n    \"updatedAt\": \"2024-06-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Employee Not Found (id=9999 — 404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 9999,\n  \"projectId\": 1,\n  \"allocationPercent\": 50,\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 9999,\n  \"projectId\": 1,\n  \"allocationPercent\": 50,\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 404,\n  \"message\": \"Employee not found with id: 9999\",\n  \"errorCode\": \"EMPLOYEE_NOT_FOUND\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Project Not Found (id=9999 — 404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 9999,\n  \"allocationPercent\": 50,\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 9999,\n  \"allocationPercent\": 50,\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 404,\n  \"message\": \"Project not found with id: 9999\",\n  \"errorCode\": \"PROJECT_NOT_FOUND\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Start Date Before Project Start — 400\n(emp 1, proj 2 — Grid start 2024-03-01)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 2,\n  \"allocationPercent\": 20,\n  \"startDate\": \"2023-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 2,\n  \"allocationPercent\": 20,\n  \"startDate\": \"2023-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Allocation start date must be after or equal to project start date (2024-03-01)\",\n  \"errorCode\": \"INVALID_DATE_RANGE\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] End Date Before Start Date — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 20,\n  \"startDate\": \"2024-06-01\",\n  \"endDate\": \"2024-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 20,\n  \"startDate\": \"2024-06-01\",\n  \"endDate\": \"2024-01-01\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"End date must be after or equal to start date\",\n  \"errorCode\": \"INVALID_DATE_RANGE\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Allocation Overlap — 409\n(emp 1, proj 1 — đã có alloc 2024-01-01 → 2024-12-31)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 10,\n  \"startDate\": \"2024-06-01\",\n  \"endDate\": \"2024-08-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "409 Conflict",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 10,\n  \"startDate\": \"2024-06-01\",\n  \"endDate\": \"2024-08-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 409,\n  \"message\": \"Employee already has an allocation on this project during the requested time period\",\n  \"errorCode\": \"ALLOCATION_OVERLAP\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Allocation Exceeded 100% — 400\n(emp 2 — đã 80%, thêm 30% → 110%)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 2,\n  \"projectId\": 2,\n  \"allocationPercent\": 30,\n  \"startDate\": \"2024-03-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 2,\n  \"projectId\": 2,\n  \"allocationPercent\": 30,\n  \"startDate\": \"2024-03-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Employee allocation exceeds 100% (current: 80%, trying to add: 30%)\",\n  \"errorCode\": \"ALLOCATION_EXCEEDED\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Validation — AllocationPercent > 100 — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 4,\n  \"projectId\": 3,\n  \"allocationPercent\": 200,\n  \"startDate\": \"2024-06-01\",\n  \"endDate\": \"2024-11-30\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 4,\n  \"projectId\": 3,\n  \"allocationPercent\": 200,\n  \"startDate\": \"2024-06-01\",\n  \"endDate\": \"2024-11-30\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Validation failed\",\n  \"errorCode\": \"VALIDATION_ERROR\",\n  \"errors\": {\n    \"allocationPercent\": \"Allocation must not exceed 100%\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Update Allocation (seed id=1: 50% → 60%)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 60,\n  \"roleInProject\": \"Backend Developer\",\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations",
+                "1"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 60,\n  \"roleInProject\": \"Backend Developer\",\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Allocation updated successfully\",\n  \"data\": {\n    \"allocationId\": 1,\n    \"employeeId\": 1,\n    \"employeeName\": \"Tuan Ho Anh\",\n    \"projectId\": 1,\n    \"projectName\": \"NCG Platform\",\n    \"projectCode\": \"NCG-001\",\n    \"allocationPercent\": 60,\n    \"roleInProject\": \"Backend Developer\",\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-12-31\",\n    \"createdAt\": \"2024-01-01T00:00:00\",\n    \"updatedAt\": \"2024-06-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Update Allocation Not Found (id=9999 — 404)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 50,\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/allocations/9999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations",
+                "9999"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 50,\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/allocations/9999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations",
+                    "9999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 404,\n  \"message\": \"Allocation not found with id: 9999\",\n  \"errorCode\": \"ALLOCATION_NOT_FOUND\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Delete Allocation Not Found (id=9999 — 404)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/allocations/9999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations",
+                "9999"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/allocations/9999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations",
+                    "9999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 404,\n  \"message\": \"Allocation not found with id: 9999\",\n  \"errorCode\": \"ALLOCATION_NOT_FOUND\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Delete Allocation (seed id=4)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/allocations/4",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "allocations",
+                "4"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/allocations/4",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "allocations",
+                    "4"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "description": "Quản lý phân bổ nhân sự vào dự án"
+    },
+    {
+      "name": "Workload",
+      "item": [
+        {
+          "name": "[Success] Get Workload Emp 1 (đã alloc 80%)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees/1/workload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "1",
+                "workload"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees/1/workload",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "1",
+                    "workload"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": {\n    \"employeeId\": 1,\n    \"employeeName\": \"Tuan Ho Anh\",\n    \"totalAllocation\": 80,\n    \"available\": 20,\n    \"allocations\": [\n      {\n        \"allocationId\": 1,\n        \"projectName\": \"NCG Platform\",\n        \"projectCode\": \"NCG-001\",\n        \"allocationPercent\": 50,\n        \"roleInProject\": \"Backend Developer\",\n        \"startDate\": \"2024-01-01\",\n        \"endDate\": \"2024-12-31\"\n      },\n      {\n        \"allocationId\": 2,\n        \"projectName\": \"Grid System\",\n        \"projectCode\": \"GRID-001\",\n        \"allocationPercent\": 30,\n        \"roleInProject\": \"Tech Lead\",\n        \"startDate\": \"2024-03-01\",\n        \"endDate\": \"2024-12-31\"\n      }\n    ]\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Get Workload Emp 4 (chưa alloc — 0%)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees/4/workload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "4",
+                "workload"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees/4/workload",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "4",
+                    "workload"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": {\n    \"employeeId\": 4,\n    \"employeeName\": \"Pham Thi Lan\",\n    \"totalAllocation\": 0,\n    \"available\": 100,\n    \"allocations\": []\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Workload Employee Not Found (id=9999 — 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/employees/9999/workload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees",
+                "9999",
+                "workload"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/employees/9999/workload",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "9999",
+                    "workload"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 404,\n  \"message\": \"Employee not found with id: 9999\",\n  \"errorCode\": \"EMPLOYEE_NOT_FOUND\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Xem khối lượng công việc của nhân viên"
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "[Success] Get Utilization Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/utilization",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "utilization"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/utilization",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "utilization"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": [\n    { \"employeeId\": 1, \"fullName\": \"Tuan Ho Anh\", \"totalAllocation\": 80, \"available\": 20 },\n    { \"employeeId\": 2, \"fullName\": \"Le Thi Minh\", \"totalAllocation\": 80, \"available\": 20 },\n    { \"employeeId\": 3, \"fullName\": \"Tran Van Nam\", \"totalAllocation\": 60, \"available\": 40 },\n    { \"employeeId\": 4, \"fullName\": \"Pham Thi Lan\", \"totalAllocation\": 0, \"available\": 100 }\n  ],\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Get Available Resources",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/available-resources",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "available-resources"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/available-resources",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "available-resources"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": [\n    { \"employeeId\": 3, \"fullName\": \"Tran Van Nam\", \"totalAllocation\": 60, \"available\": 40 },\n    { \"employeeId\": 4, \"fullName\": \"Pham Thi Lan\", \"totalAllocation\": 0, \"available\": 100 }\n  ],\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] Get Overloaded Resources",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/overloaded",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "overloaded"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/overloaded",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "overloaded"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": []\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Báo cáo utilization, available, overloaded resources"
+    },
+    {
+      "name": "AI (Google Gemini)",
+      "item": [
+        {
+          "name": "[Success] AI Recommend Resources",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Tìm Java Developer còn tối thiểu 50% available\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ai/recommend",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ai",
+                "recommend"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"Tìm Java Developer còn tối thiểu 50% available\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/ai/recommend",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "ai",
+                    "recommend"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": {\n    \"query\": \"Tìm Java Developer còn tối thiểu 50% available\",\n    \"explanation\": \"Đã tìm thấy nhân sự phù hợp với yêu cầu\",\n    \"recommendedResources\": [],\n    \"warnings\": []\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            },
+            {
+              "name": "[Success] AI Recommend Resources",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"Tìm Java Developer còn tối thiểu 20% available\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/ai/recommend",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "ai",
+                    "recommend"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Access-Control-Request-Method"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Access-Control-Request-Headers"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "Date",
+                  "value": "Wed, 15 Jul 2026 15:32:04 GMT"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=60"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"success\": true,\n    \"status\": 200,\n    \"message\": \"Operation successful\",\n    \"data\": {\n        \"query\": \"Tìm Java Developer còn tối thiểu 20% available\",\n        \"explanation\": \"Dựa trên yêu cầu của bạn, tôi tìm thấy 3 resource phù hợp:\\n\\n• **Tuan Ho Anh** — Senior Developer (FSOFT-Q1) — available: **20%** — Dự án hiện tại: NCG Platform, Grid System\\n• **Le Thi Minh** — Developer (FSOFT-Q1) — available: **20%** — Dự án hiện tại: NCG Platform\\n• **Tran Van Nam** — Junior Developer (FSOFT-Q2) — available: **40%** — Dự án hiện tại: Grid System\\n\\n💡 *Bạn có thể liên hệ trực tiếp với các resource trên để thảo luận về việc phân bổ công việc.*\",\n        \"recommendedResources\": [\n            {\n                \"employeeId\": 1,\n                \"employeeName\": \"Tuan Ho Anh\",\n                \"role\": \"Senior Developer\",\n                \"department\": \"FSOFT-Q1\",\n                \"email\": \"tuanha@company.com\",\n                \"available\": 20,\n                \"currentProjects\": [\n                    \"NCG Platform\",\n                    \"Grid System\"\n                ]\n            },\n            {\n                \"employeeId\": 2,\n                \"employeeName\": \"Le Thi Minh\",\n                \"role\": \"Developer\",\n                \"department\": \"FSOFT-Q1\",\n                \"email\": \"minhlt@company.com\",\n                \"available\": 20,\n                \"currentProjects\": [\n                    \"NCG Platform\"\n                ]\n            },\n            {\n                \"employeeId\": 3,\n                \"employeeName\": \"Tran Van Nam\",\n                \"role\": \"Junior Developer\",\n                \"department\": \"FSOFT-Q2\",\n                \"email\": \"namtv@company.com\",\n                \"available\": 40,\n                \"currentProjects\": [\n                    \"Grid System\"\n                ]\n            }\n        ]\n    },\n    \"timestamp\": \"2026-07-15T15:32:04.730515258Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Success] AI Risk Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Sprint tới cần thêm 2 Java Developer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ai/risk-analysis",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ai",
+                "risk-analysis"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"Sprint tới cần thêm 2 Java Developer\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/ai/risk-analysis",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "ai",
+                    "risk-analysis"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"status\": 200,\n  \"message\": \"Operation successful\",\n  \"data\": {\n    \"query\": \"Sprint tới cần thêm 2 Java Developer\",\n    \"overallAssessment\": \"Không có đủ thông tin để đánh giá\",\n    \"risks\": [],\n    \"suggestions\": []\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] AI Empty Query — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ai/recommend",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ai",
+                "recommend"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/ai/recommend",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "ai",
+                    "recommend"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Validation failed\",\n  \"errorCode\": \"VALIDATION_ERROR\",\n  \"errors\": {\n    \"query\": \"Query is required\"\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "AI Resource Recommendation & Risk Analysis. Yêu cầu cấu hình biến môi trường GEMINI_API_KEY."
+    },
+    {
+      "name": "General Error Cases",
+      "item": [
+        {
+          "name": "[Error] Malformed JSON (thiếu dấu phẩy — 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"MALFORMED\",\n  \"fullName\": \"Broken JSON\",\n  \"email\": \"bad@example.com\"\n  \"role\": \"Dev\"\n  \"department\": \"IT\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeCode\": \"MALFORMED\",\n  \"fullName\": \"Broken JSON\",\n  \"email\": \"bad@example.com\"\n  \"role\": \"Dev\"\n  \"department\": \"IT\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Invalid request body. Check date format (yyyy-MM-dd) and JSON syntax.\",\n  \"errorCode\": \"MALFORMED_REQUEST\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Invalid Date Format (dd-MM-yyyy — 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"DATEBAD\",\n  \"projectName\": \"Bad Date\",\n  \"customer\": \"Test\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"01-01-2025\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectCode\": \"DATEBAD\",\n  \"projectName\": \"Bad Date\",\n  \"customer\": \"Test\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"01-01-2025\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/projects",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": 400,\n  \"message\": \"Invalid request body. Check date format (yyyy-MM-dd) and JSON syntax.\",\n  \"errorCode\": \"MALFORMED_REQUEST\",\n  \"timestamp\": \"2024-06-01T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Wrong HTTP Method (PATCH — 405)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"TEMP\",\n  \"projectName\": \"Test\",\n  \"customer\": \"Test\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2025-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "405 Method Not Allowed",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectCode\": \"TEMP\",\n  \"projectName\": \"Test\",\n  \"customer\": \"Test\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2025-01-01\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/projects",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ]
+                }
+              },
+              "status": "Method Not Allowed",
+              "code": 405,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"error\": \"Method Not Allowed\",\n  \"message\": \"Request method 'PATCH' not supported\",\n  \"path\": \"/api/v1/projects\",\n  \"status\": 405\n}"
+            }
+          ]
+        },
+        {
+          "name": "[Error] Wrong Content-Type (text/plain — 415)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "not json at all"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "415 Unsupported Media Type",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "text/plain"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "not json at all"
+                },
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"error\": \"Unsupported Media Type\",\n  \"message\": \"Content-Type 'text/plain' is not supported\",\n  \"status\": 415\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Các lỗi chung — malformed request, sai HTTP method, sai content-type"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "employeeId",
+      "value": "1"
+    },
+    {
+      "key": "projectId",
+      "value": "1"
+    },
+    {
+      "key": "allocationId",
+      "value": "1"
+    },
+    {
+      "key": "empCode",
+      "value": "EMP001"
+    },
+    {
+      "key": "projCode",
+      "value": "NCG-001"
+    }
+  ]
+}

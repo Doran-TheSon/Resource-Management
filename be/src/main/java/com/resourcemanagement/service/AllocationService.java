@@ -38,6 +38,18 @@ public class AllocationService {
     private final EmployeeRepository employeeRepository;
     private final ProjectRepository projectRepository;
 
+    public List<AllocationResponse> findAll() {
+        return allocationRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public AllocationResponse findById(Long id) {
+        Allocation allocation = allocationRepository.findById(id)
+                .orElseThrow(() -> new AllocationNotFoundException(id));
+        return toResponse(allocation);
+    }
+
     @Transactional
     public AllocationResponse create(AllocationRequest request) {
         Employee employee = employeeRepository.findById(request.employeeId())
