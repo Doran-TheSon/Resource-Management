@@ -92,7 +92,23 @@ export default function AiRecommendPage() {
                 <span style={{ fontSize: 20 }}>🤖</span>
                 <h3 style={styles.explanationTitle}>AI Analysis</h3>
               </div>
-              <p style={styles.explanationText}>{result.explanation}</p>
+              <div style={styles.explanationText}>
+                {result.explanation.split('\n').map((line, i) => {
+                  // Bỏ dòng trống
+                  if (!line.trim()) return null;
+                  // Bullet points: "• **Name** — Role — available: **X%**"
+                  if (line.trimStart().startsWith('•')) {
+                    const clean = line.replace(/[*•]/g, '').trim();
+                    return <div key={i} style={styles.bulletRow}>{clean}</div>;
+                  }
+                  // Emoji tip line
+                  if (line.includes('💡')) {
+                    const clean = line.replace(/[*💡]/g, '').trim();
+                    return <div key={i} style={styles.tipRow}>💡 {clean}</div>;
+                  }
+                  return <p key={i} style={{ margin: 0 }}>{line}</p>;
+                })}
+              </div>
             </div>
           )}
 
@@ -262,7 +278,26 @@ const styles = {
   explanationText: {
     fontSize: 'var(--text-sm)',
     color: 'var(--color-text-secondary)',
-    lineHeight: 1.7,
+    lineHeight: 1.8,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--space-1)',
+  },
+  bulletRow: {
+    padding: 'var(--space-2) var(--space-3)',
+    backgroundColor: 'var(--color-bg)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--color-text)',
+    fontSize: 'var(--text-sm)',
+    borderLeft: '3px solid var(--color-primary-light)',
+  },
+  tipRow: {
+    padding: 'var(--space-2) var(--space-3)',
+    backgroundColor: 'var(--color-info-bg)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--color-info-dark)',
+    fontSize: 'var(--text-sm)',
+    marginTop: 'var(--space-2)',
   },
   sectionTitle: {
     fontSize: 'var(--text-lg)',

@@ -547,14 +547,22 @@ public class AiRecommendationService {
     // ======================== DB Query Helpers ========================
 
     private List<RecommendedResource> findResources(SearchCriteria criteria) {
+        // Nếu có role → tìm theo role + available
         if (criteria.role != null && !criteria.role.isBlank()) {
             int minAvail = criteria.minAvailable != null ? criteria.minAvailable : 0;
             return resourceTools.findEmployees(criteria.role, criteria.department, minAvail);
-        } else if (criteria.minAvailable != null) {
-            return resourceTools.findEmployees(null, criteria.department, criteria.minAvailable);
-        } else {
-            return resourceTools.findEmployees(null, criteria.department, 0);
         }
+
+        // Nếu KHÔNG có role nhưng có minAvailable → tìm tất cả employee có available >= minAvailable
+        if (criteria.minAvailable != null) {
+            List<RecommendedResource> allAvailable = resourceTools.findEmployees(null, criteria.department, criteria.minAvailable);
+            log.info("No role specified, filtering by minAvailable={} → {} results", criteria.minAvailable, allAvailable.size());
+            return allAvailable;
+        }
+
+        // Không role, không minAvailable → không thể recommend
+        log.warn("No criteria specified, returning empty");
+        return List.of();
     }
 
     // ======================== Risk Logic (100% Java) ========================

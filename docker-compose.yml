@@ -59,7 +59,7 @@ services:
       context: ./fe
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://be:8080/api/v1
+        - VITE_API_URL=http://localhost:8080/api/v1
     container_name: rm-fe
     ports:
       - "5173:3000"
