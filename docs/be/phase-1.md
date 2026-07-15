@@ -80,10 +80,10 @@ logging:
 |---------|-------|------|-----------|
 | `be` | tự build | `8080` | Spring Boot |
 | `fe` | tự build | `5173` | React (giữ nguyên) |
-| `db` | `postgres:16-alpine` | `5432` | PostgreSQL, volume persist + health check |
+| `db` | `postgres:16-alpine` | `5432` | PostgreSQL, volume persist |
 | `pgadmin` | `dpage/pgadmin4:latest` | `5050` | Web xem/soạn dữ liệu, login `admin@rm.com` / `admin` |
 
-Service `be` dùng `SPRING_PROFILES_ACTIVE=docker` và `depends_on: db: condition: service_healthy`.
+Service `be` dùng `SPRING_PROFILES_ACTIVE=docker` và `depends_on: db: condition: service_healthy` (đợi DB sẵn sàng mới start).
 
 ### 4. Cập nhật `.gitignore`
 
@@ -96,9 +96,6 @@ Hướng dẫn chạy:
 ```bash
 # Chạy full stack
 docker compose up --build
-
-# Health check
-curl http://localhost:8080/api/health
 
 # Swagger
 http://localhost:8080/swagger-ui.html
@@ -123,6 +120,6 @@ be/
 ```
 
 App chạy được bằng `docker compose up`:
-- API: `http://localhost:8080`
-- Swagger: `http://localhost:8080/swagger-ui.html`
+- API endpoints: `http://localhost:8080/api/v1/...`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
 - pgAdmin: `http://localhost:5050`

@@ -123,14 +123,8 @@ public class ApiResponse<T> {
                 .build();
     }
 
-    // Dành cho DELETE (không có data)
-    public static ApiResponse<Void> ok(String message) {
-        return ApiResponse.<Void>builder()
-                .success(true)
-                .status(200)
-                .message(message)
-                .build();
-    }
+    // Dành cho DELETE (không có data, không cần ApiResponse)
+    // Ưu tiên dùng ResponseEntity.noContent().build() — trả về 204
 }
 ```
 
@@ -312,7 +306,7 @@ public class GlobalExceptionHandler {
 | 200 OK | GET, PUT thành công |
 | 201 Created | POST thành công |
 | 204 No Content | DELETE thành công |
-| 400 Bad Request | Validation fail, business rule fail (allocation > 100%, date sai, project COMPLETED) |
+| 400 Bad Request | Validation fail, business rule fail |
 | 404 Not Found | Employee/Project/Allocation không tồn tại |
 | 409 Conflict | Duplicate code, Optimistic Lock, Overlap allocation |
 | 500 Internal Server Error | Lỗi không xác định |
@@ -344,11 +338,11 @@ public ResponseEntity<ApiResponse<EmployeeResponse>> create(@Valid @RequestBody 
             .body(ApiResponse.success(employee, "Employee created successfully"));
 }
 
-// DELETE
+// DELETE — trả về 204 No Content, không có body
 @DeleteMapping("/{id}")
-public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+public ResponseEntity<Void> delete(@PathVariable Long id) {
     employeeService.delete(id);
-    return ResponseEntity.ok(ApiResponse.ok("Employee deleted successfully"));
+    return ResponseEntity.noContent().build();
 }
 ```
 

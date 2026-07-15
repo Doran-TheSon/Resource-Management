@@ -13,13 +13,11 @@
 docker compose up --build
 ```
 
-Đợi 30-60s, kiểm tra:
+Đợi 30-60s, kiểm tra Swagger UI có response:
 
 ```
-http://localhost:8080/api/health
+http://localhost:8080/swagger-ui.html
 ```
-
-→ 200 OK là app đã chạy.
 
 ---
 
@@ -332,7 +330,7 @@ Body → raw → JSON:
 ```
 > Tuan Ho Anh: trừ 50% cũ, + 60% mới = 80% - 50% + 60% = 90% → được.
 
-**19. DELETE — Xoá allocation** → 200
+**19. DELETE — Xoá allocation** → 204
 
 ```
 DELETE {{base_url}}/allocations/4
@@ -352,7 +350,7 @@ GET {{base_url}}/reports/utilization
 **21. GET — Available resources**
 
 ```
-GET {{base_url}}/reports/available
+GET {{base_url}}/reports/available-resources
 ```
 
 **22. GET — Overloaded resources**
@@ -392,8 +390,10 @@ Tạo thư mục `screenshots/`. Dùng Postman gửi request → chụp màn hì
 | 15 | `workload/success.png` | GET /employees/1/workload | 200 |
 | 16 | `workload/notfound.png` | GET /employees/99/workload | 404 |
 | 17 | `reports/utilization.png` | GET /reports/utilization | 200 |
-| 18 | `reports/available.png` | GET /reports/available | 200 |
+| 18 | `reports/available-resources.png` | GET /reports/available-resources | 200 |
 | 19 | `reports/overloaded.png` | GET /reports/overloaded | 200 |
+
+> **Important:** DELETE trả về **204 No Content**, hoàn toàn không có body — chụp screenshot postman sẽ thấy status 204, response body trống.
 
 ---
 
@@ -414,7 +414,7 @@ Tạo thư mục `screenshots/`. Dùng Postman gửi request → chụp màn hì
 - [ ] POST /allocations — overlap → 409 `ALLOCATION_OVERLAP`
 - [ ] GET /employees/1/workload → total 80%
 - [ ] PUT /allocations/1 — update → 200
-- [ ] DELETE /allocations/4 → 200
+- [ ] DELETE /allocations/4 → 204
 - [ ] GET /reports/utilization → 200
 - [ ] POST validation fail → 400 + field errors
 - [ ] `postman_collection.json` export

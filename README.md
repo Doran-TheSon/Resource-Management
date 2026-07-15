@@ -123,7 +123,7 @@ docker compose up --build
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
 | GET    | `/api/reports/utilization` | Báo cáo utilization |
-| GET    | `/api/reports/available-resources` | Nhân viên còn available |
+| GET    | `/api/v1/reports/available-resources` | Nhân viên còn available |
 | GET    | `/api/reports/overloaded` | Nhân viên quá tải |
 
 ### AI

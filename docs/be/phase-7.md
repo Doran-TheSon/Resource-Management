@@ -77,11 +77,8 @@ public class EmployeeController {
         return ResponseEntity.ok(ApiResponse.success(employee, "Employee updated successfully"));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
-        employeeService.delete(id);
-        return ResponseEntity.ok(ApiResponse.ok("Employee deleted successfully"));
-    }
+    // LƯU Ý: Employee DELETE không nằm trong requirement section 3.1
+    // Nếu cần, implement sau — ưu tiên các endpoint đã quy định
 }
 ```
 
@@ -184,9 +181,9 @@ public class AllocationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         allocationService.delete(id);
-        return ResponseEntity.ok(ApiResponse.ok("Allocation deleted successfully"));
+        return ResponseEntity.noContent().build();
     }
 }
 ```
@@ -251,7 +248,8 @@ public class ReportController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    @GetMapping("/available")
+    // Mapping theo requirement-analysis section 4.2: "Available Resource Report"
+    @GetMapping("/available-resources")
     public ResponseEntity<ApiResponse<List<EmployeeUtilizationDTO>>> getAvailable() {
         List<EmployeeUtilizationDTO> report = allocationService.getAvailableResources();
         return ResponseEntity.ok(ApiResponse.success(report));
@@ -283,16 +281,16 @@ public class ReportController {
 | DELETE | `/api/v1/allocations/{id}` | AllocationController | delete |
 | GET | `/api/v1/employees/{id}/workload` | WorkloadController | getWorkload |
 | GET | `/api/v1/reports/utilization` | ReportController | getUtilization |
-| GET | `/api/v1/reports/available` | ReportController | getAvailable |
+| GET | `/api/v1/reports/available-resources` | ReportController | getAvailable |
 | GET | `/api/v1/reports/overloaded` | ReportController | getOverloaded |
-| GET | `/api/v1/health` | HealthController | (có sẵn) |
+| GET | `/api/v1/health` | HealthController (có sẵn) | — |
 
 ---
 
 ## Kết quả sau phase 7
 
-- 5 controllers: Employee, Project, Allocation, Workload, Report
-- HealthController giữ nguyên (có sẵn từ skeleton)
+- 6 controllers: Employee, Project, Allocation, Workload, Report, Health (có sẵn)
 - Mỗi endpoint trả về `ApiResponse<T>` chuẩn
-- HTTP status đúng: 201 cho POST, 200 cho GET/PUT, 204 cho DELETE (dùng ok())
+- HTTP status đúng: 201 cho POST, 200 cho GET/PUT, 204 cho DELETE
+- Employee DELETE không implement — không nằm trong requirement
 - Build thành công, Swagger UI hiển thị đủ endpoints
