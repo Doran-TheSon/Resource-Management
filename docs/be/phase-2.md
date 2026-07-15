@@ -202,12 +202,12 @@ public class Allocation {
 }
 ```
 
-### 6. Tạo `schema.sql`
+### 6. Tạo Flyway migration V1 — schema
 
-`be/src/main/resources/schema.sql` — dùng cho profile `prod` (ddl-auto=validate cần schema sẵn):
+`be/src/main/resources/db/migration/V1__init_schema.sql` — Flyway tự động chạy, không cần `IF NOT EXISTS` vì Flyway quản lý version:
 
 ```sql
-CREATE TABLE IF NOT EXISTS employee (
+CREATE TABLE employee (
     employee_id BIGSERIAL PRIMARY KEY,
     employee_code VARCHAR(20) NOT NULL UNIQUE,
     full_name VARCHAR(100) NOT NULL,
@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS employee (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS project (
+CREATE TABLE project (
     project_id BIGSERIAL PRIMARY KEY,
     project_code VARCHAR(20) NOT NULL UNIQUE,
     project_name VARCHAR(200) NOT NULL,
@@ -230,7 +230,7 @@ CREATE TABLE IF NOT EXISTS project (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS allocation (
+CREATE TABLE allocation (
     allocation_id BIGSERIAL PRIMARY KEY,
     employee_id BIGINT NOT NULL,
     project_id BIGINT NOT NULL,
@@ -244,57 +244,51 @@ CREATE TABLE IF NOT EXISTS allocation (
 );
 
 -- FK constraints
-ALTER TABLE allocation ADD CONSTRAINT IF NOT EXISTS fk_allocation_employee
+ALTER TABLE allocation ADD CONSTRAINT fk_allocation_employee
     FOREIGN KEY (employee_id) REFERENCES employee(employee_id);
-ALTER TABLE allocation ADD CONSTRAINT IF NOT EXISTS fk_allocation_project
+ALTER TABLE allocation ADD CONSTRAINT fk_allocation_project
     FOREIGN KEY (project_id) REFERENCES project(project_id);
 
--- Unique constraints
-ALTER TABLE allocation ADD CONSTRAINT IF NOT EXISTS uq_allocation_emp_project_start
+-- Unique constraint — ngăn duplicate allocation cùng employee, cùng project, cùng thời gian
+ALTER TABLE allocation ADD CONSTRAINT uq_allocation_emp_project_start
     UNIQUE (employee_id, project_id, start_date);
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_employee_code ON employee(employee_code);
-CREATE INDEX IF NOT EXISTS idx_project_status ON project(status);
-CREATE INDEX IF NOT EXISTS idx_allocation_employee ON allocation(employee_id);
-CREATE INDEX IF NOT EXISTS idx_allocation_project ON allocation(project_id);
+CREATE INDEX idx_employee_code ON employee(employee_code);
+CREATE INDEX idx_project_status ON project(status);
+CREATE INDEX idx_allocation_employee ON allocation(employee_id);
+CREATE INDEX idx_allocation_project ON allocation(project_id);
 ```
 
-### 7. Tạo `data.sql` (seed data)
+### 7. Tạo Flyway migration V2 — seed data
 
-`be/src/main/resources/data.sql` — dùng cho dev profile (H2):
+`be/src/main/resources/db/migration/V2__seed_data.sql`
 
-```sql
-INSERT INTO employee (employee_code, full_name, email, role, department, created_at, updated_at)
-VALUES
-('EMP001', 'Tuan Ho Anh', 'tuanha@company.com', 'Senior Developer', 'FSOFT-Q1', NOW(), NOW()),
-('EMP002', 'Le Thi Minh', 'minhlt@company.com', 'Developer', 'FSOFT-Q1', NOW(), NOW()),
-('EMP003', 'Tran Van Nam', 'namtv@company.com', 'Junior Developer', 'FSOFT-Q2', NOW(), NOW()),
-('EMP004', 'Pham Thi Lan', 'lanpt@company.com', 'Tester', 'FSOFT-Q1', NOW(), NOW());
+Thêm Flyway dependency vào `pom.xml`:
 
-INSERT INTO project (project_code, project_name, customer, status, start_date, end_date, created_at, updated_at)
-VALUES
-('NCG-001', 'NCG Platform', 'NCG Corp', 'ACTIVE', '2024-01-01', '2024-12-31', NOW(), NOW()),
-('GRID-001', 'Grid System', 'Grid Inc', 'ACTIVE', '2024-03-01', '2025-02-28', NOW(), NOW()),
-('AI-001', 'Internal AI Tool', 'Internal', 'PLANNING', '2024-06-01', '2024-11-30', NOW(), NOW());
-
-INSERT INTO allocation (employee_id, project_id, allocation_percent, role_in_project, start_date, end_date, version, created_at, updated_at)
-VALUES
-(1, 1, 50, 'Backend Developer', '2024-01-01', '2024-12-31', 0, NOW(), NOW()),
-(1, 2, 30, 'Tech Lead', '2024-03-01', '2024-12-31', 0, NOW(), NOW()),
-(2, 1, 80, 'Fullstack Developer', '2024-01-01', '2024-12-31', 0, NOW(), NOW()),
-(3, 2, 60, 'Frontend Developer', '2024-03-01', '2024-12-31', 0, NOW(), NOW());
+```xml
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-database-postgresql</artifactId>
+    <scope>runtime</scope>
+</dependency>
 ```
 
-### 8. Cập nhật `application-dev.yml`
-
-Thêm dòng để H2 tự chạy `data.sql` khi start:
+Cập nhật `application.yml`:
 
 ```yaml
 spring:
-  sql:
-    init:
-      mode: always
+  jpa:
+    hibernate:
+      ddl-auto: validate          # Flyway tạo table, Hibernate chỉ validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 ```
 
 ---
