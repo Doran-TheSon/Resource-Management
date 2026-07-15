@@ -31,14 +31,17 @@
 - [ ] `ProjectRepository` — filter by status/customer, sort by `startDate` DESC
 - [ ] `AllocationRepository` — `SUM` query cho validation (COALESCE), `findByEmployeeEmployeeId`, report queries (utilization, available, overloaded)
 
-### 4. Exception & response
+### 4. Exception & response ✅
 
-- [ ] Custom exceptions: `EmployeeNotFoundException` (404), `ProjectNotFoundException` (404), `AllocationNotFoundException` (404), `AllocationExceededException` (400), `AllocationOverlapException` (409)
-- [ ] `GlobalExceptionHandler` (`@RestControllerAdvice`):
+- [x] Custom exceptions: `EmployeeNotFoundException` (404), `ProjectNotFoundException` (404), `AllocationNotFoundException` (404), `AllocationExceededException` (400), `AllocationOverlapException` (409)
+- [x] `GlobalExceptionHandler` (`@RestControllerAdvice`):
   - `OptimisticLockException` → 409 Conflict
   - `MethodArgumentNotValidException` → 400 với field-level errors map
   - `HttpMessageNotReadableException` → 400
-- [ ] `ErrorResponse` DTO (message, status code, optional field errors)
+- [x] `ErrorResponse` DTO (message, status code, optional field errors)
+- [x] 9 custom exceptions với đầy đủ errorCode
+- [x] `ApiResponse<T>` generic cho success response
+- [x] Build thành công `mvn compile`
 
 ### 5. DTO
 
