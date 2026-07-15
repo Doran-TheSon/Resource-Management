@@ -283,13 +283,12 @@ public class ReportController {
 | GET | `/api/v1/reports/utilization` | ReportController | getUtilization |
 | GET | `/api/v1/reports/available-resources` | ReportController | getAvailable |
 | GET | `/api/v1/reports/overloaded` | ReportController | getOverloaded |
-| GET | `/api/v1/health` | HealthController (có sẵn) | — |
 
 ---
 
 ## Kết quả sau phase 7
 
-- 6 controllers: Employee, Project, Allocation, Workload, Report, Health (có sẵn)
+- 5 controllers: Employee, Project, Allocation, Workload, Report
 - Mỗi endpoint trả về `ApiResponse<T>` chuẩn
 - HTTP status đúng: 201 cho POST, 200 cho GET/PUT, 204 cho DELETE
 - Employee DELETE không implement — không nằm trong requirement

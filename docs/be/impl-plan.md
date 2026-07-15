@@ -67,14 +67,14 @@
 - [x] Additional: sửa `ProjectCompletedException` message format: `"Project {name} is completed. Cannot allocate."`
 - [x] Build thành công `mvn compile`
 
-### 7. Controller layer
+### 7. Controller layer ✅
 
-- [ ] `EmployeeController` — POST, GET (list + filter + page + sort), GET/{id}, PUT/{id}
-- [ ] `ProjectController` — POST, GET (list + filter), GET/{id}, PUT/{id}
-- [ ] `AllocationController` — POST (201), PUT/{id} (200), DELETE/{id} (204)
-- [ ] `WorkloadController` — GET /employees/{id}/workload (trả danh sách allocation + tổng + available)
-- [ ] `ReportController` — GET /reports/utilization, /reports/available, /reports/overloaded
-- [ ] Base URL prefix: `/api/v1/...`
+- [x] `EmployeeController` — POST, GET (list + filter + page + sort), GET/{id}, PUT/{id}
+- [x] `ProjectController` — POST, GET (list + filter), GET/{id}, PUT/{id}
+- [x] `AllocationController` — POST (201), PUT/{id} (200), DELETE/{id} (204)
+- [x] `WorkloadController` — GET /employees/{id}/workload (trả danh sách allocation + tổng + available)
+- [x] `ReportController` — GET /reports/utilization, /reports/available, /reports/overloaded
+- [x] Base URL prefix: `/api/v1/...` — thêm prefix trong mỗi `@RequestMapping` (không dùng `server.servlet.context-path` để tránh double prefix với Swagger UI)
 
 ### 8. Testing
 

@@ -132,13 +132,6 @@ docker compose up --build
 |--------|----------|-------|
 | POST   | `/api/ai/recommend` | Gợi ý resource (AI) |
 | POST   | `/api/ai/risk-analysis` | Phân tích rủi ro (AI) |
-
-### Health
-
-| Method | Endpoint | Mô tả |
-|--------|----------|-------|
-| GET    | `/api/health` | Health check |
-
 ## Business Rules
 
 1. **0 < allocation <= 100** — allocation phải từ 1% đến 100%
