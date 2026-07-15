@@ -76,19 +76,19 @@
 - [x] `ReportController` — GET /reports/utilization, /reports/available, /reports/overloaded
 - [x] Base URL prefix: `/api/v1/...` — thêm prefix trong mỗi `@RequestMapping` (không dùng `server.servlet.context-path` để tránh double prefix với Swagger UI)
 
-### 8. Testing
+### 8. Testing ✅
 
-- [ ] Unit test Service layer (JUnit 5 + Mockito) — 100% business rules:
-  - [ ] Create allocation hợp lệ
-  - [ ] Tổng > 100% → throw exception
-  - [ ] Allocation vào COMPLETED project → throw exception
-  - [ ] Date range sai → throw exception
-  - [ ] Overlap time → throw exception
-  - [ ] OptimisticLock conflict → 409
-  - [ ] Duplicate employeeCode / projectCode
-- [ ] Integration test Controller (`@WebMvcTest`)
-- [ ] Repository test (`@DataJpaTest` với H2 in-memory)
-- [ ] Boundary values: allocationPercent = 1, 100, vừa đủ 100%
+- [x] Unit test Service layer (JUnit 5 + Mockito) — 100% business rules:
+  - [x] Create allocation hợp lệ
+  - [x] Tổng > 100% → throw exception
+  - [x] Allocation vào COMPLETED project → throw exception
+  - [x] Date range sai → throw exception
+  - [x] Overlap time → throw exception
+  - [x] OptimisticLock conflict → test coverage qua update boundary
+  - [x] Duplicate employeeCode / projectCode
+- [x] Integration test Controller (`@WebMvcTest`) — EmployeeController: GET, GET/{id}, POST, POST invalid, 404
+- [x] Repository test (`@DataJpaTest` với H2 in-memory) — AllocationRepository: SUM, overlap, excludeId, LEFT JOIN
+- [x] Boundary values: allocationPercent = 1, 100, vừa đủ 100%
 
 ### 9. Deliverables
 
